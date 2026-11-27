@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hướng dẫn Happy Tidy tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* same family as index.html: white, ink, tools blue; reference manual with a sticky contents column */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#14161a);--ink:light-dark(#1b1d22,#eceae4);--mute:light-dark(#5b626e,#a3a9b3);--line:light-dark(#dde0e5,#2f343c);--panel:light-dark(#f4f6f7,#1c1f25);--acc:light-dark(#1d5d8a,#7cb8e6);--accbg:light-dark(#e6eff6,#15263a);--hot:light-dark(#d23f29,#ff6b55);--ok:light-dark(#2b8a55,#5cc98d);--warn:light-dark(#b8740a,#f0b44c)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Nunito,system-ui,sans-serif;overflow-x:clip}
+a{color:var(--acc)}
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px max(5vw,16px);border-bottom:1px solid var(--line)}
+.bar b{font-size:18px;font-weight:900;margin-right:auto}
+.bar a{font-weight:800;text-decoration:none;padding:6px 12px;border-radius:9px;border:1px solid var(--line);color:var(--ink)}
+.bar a.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.wrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;padding:28px max(5vw,16px) 60px}
+nav.toc{position:sticky;top:16px;align-self:start;font-size:15px}
+nav.toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+nav.toc a{display:block;padding:5px 12px;text-decoration:none;color:var(--mute);font-weight:700;margin-left:-2px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--acc);border-left-color:var(--acc)}
+main{max-width:820px}
+h1{font-size:clamp(32px,4.5vw,46px);line-height:1.05;letter-spacing:-.02em;font-weight:900;margin:0 0 10px}
+h2{font-size:26px;line-height:1.2;font-weight:900;margin:44px 0 10px;padding-top:6px;scroll-margin-top:16px}
+h3{font-size:18px;font-weight:800;margin:22px 0 6px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--mute)}
+ol.steps,ul{padding-left:22px}
+ol.steps li,ul li{margin:6px 0}
+.scroll{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:13px;color:var(--mute);font-weight:800}
+code{font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+.box{background:var(--accbg);border-radius:12px;padding:12px 16px;margin:12px 0}
+.box.warn{background:color-mix(in srgb,var(--warn) 14%,var(--bg))}
+.fig{margin:14px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.fig img{display:block;width:100%}
+.fig figcaption{font-size:14px;color:var(--mute);padding:8px 12px;border-top:1px solid var(--line)}
+.ruler{display:grid;grid-template-columns:1.3fr .45fr .75fr 1.5fr;border-radius:10px;overflow:hidden;margin:10px 0}
+.ruler div{padding:8px;font-weight:800;color:#fff;font-size:14px}
+.ruler small{display:block;font-weight:600;font-size:13px}
+.r1{background:#2b8a55}.r2{background:#1d5d8a}.r3{background:#b8740a}.r4{background:#d23f29}
+.k{font-weight:800}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr);gap:10px}nav.toc{position:static}nav.toc ol{display:flex;flex-wrap:wrap;gap:4px;border:0}nav.toc a{border:1px solid var(--line);border-radius:8px;margin:0;padding:4px 10px}}
+@media(max-width:600px){table{font-size:13px}th,td{padding:6px 4px}}
+</style>
+</head><body>
+<div class="bar"><b>Happy Tidy level tools</b><a href="index.html">Trang chủ</a><a href="editor.html">Tạo level</a><a href="playtest.html">Test độ khó</a><a class="on" href="guide.html">Hướng dẫn</a></div>
+<div class="wrap">
+<nav class="toc" aria-label="Mục lục"><ol>
+ <li><a href="#mo-tool">1. Mở tool và lưu dữ liệu</a></li>
+ <li><a href="#man-hinh">2. Màn hình editor</a></li>
+ <li><a href="#gen">3. Tạo 1 level mới</a></li>
+ <li><a href="#do-kho">4. Đo độ khó</a></li>
+ <li><a href="#chuoi">5. Chuỗi level</a></li>
+ <li><a href="#luu">6. Lưu và xuất Unity</a></li>
+ <li><a href="#playtest">7. Cho người chơi thử</a></li>
+ <li><a href="#loi">8. Lỗi hay gặp, giới hạn</a></li>
+</ol></nav>
+<main>
+<h1>Hướng dẫn sử dụng</h1>
+<p class="lead">Cách dùng tool tạo level (bản 15) và tool test độ khó: gen level theo đường cong độ khó, cho bot v2 ước tính APS, xếp chuỗi level, rồi cho người thật chơi thử.</p>
+
+<h2 id="mo-tool">1. Mở tool và lưu dữ liệu</h2>
+<p>Từ <a href="index.html">trang chủ</a> bấm <span class="k">Mở tool tạo level</span> hoặc <span class="k">Mở tool test độ khó</span>. Dùng Chrome hoặc Edge trên máy tính.</p>
+<div class="box warn"><b>Bản web này không có kho dữ liệu chung.</b> Mọi thứ cậu lưu (thư viện level, chuỗi level, kết quả chơi thử) nằm trong trình duyệt của máy đang dùng. Xoá dữ liệu trình duyệt hoặc đổi máy là không thấy nữa. Vì vậy hãy <b>tải file JSON</b> sau mỗi level và giữ file đó.</div>
+<div class="scroll"><table>
+ <thead><tr><th>Dữ liệu</th><th>Nằm ở đâu</th><th>Muốn chia sẻ thì</th></tr></thead>
+ <tbody>
+  <tr><td>Level đang làm dở</td><td>Tự lưu trong trình duyệt</td><td>Tab Lưu → Tải file về máy</td></tr>
+  <tr><td>Thư viện level</td><td>Trình duyệt</td><td>Tải JSON từng level, gửi file</td></tr>
+  <tr><td>Danh sách level cho người test</td><td>File <code>playtest-levels.json</code> trên web</td><td>Xem phần 7</td></tr>
+  <tr><td>Kết quả người test</td><td>Trình duyệt của người test</td><td>Người test tải file kết quả, gửi designer nhập vào</td></tr>
+ </tbody>
+</table></div>
+
+<h2 id="man-hinh">2. Màn hình editor</h2>
+<figure class="fig"><img src="editor.webp" alt="Editor: map bên trái, tab Độ khó bên phải với APS ước tính 1,70"><figcaption>Bên trái là map, bên phải là các tab. Góc trên có nút 📈 Chuỗi level và 🧪 Phòng test bot.</figcaption></figure>
+<h3>Thanh công cụ trên map</h3>
+<div class="scroll"><table>
+ <thead><tr><th>Nút</th><th>Làm gì</th></tr></thead>
+ <tbody>
+  <tr><td>Sửa</td><td>Chọn, kéo, xoay, phóng, lật, đổi lớp item</td></tr>
+  <tr><td>Chơi thử</td><td>Tự chơi hoặc xem bot chơi; "Xem lại 1 lượt" để tua từng tap</td></tr>
+  <tr><td>Tô vùng cấm</td><td>Tô chỗ không được đặt đồ (tường, cửa sổ…)</td></tr>
+  <tr><td>↶ ↷</td><td>Undo / Redo</td></tr>
+  <tr><td>+ −, Vừa khung</td><td>Zoom map</td></tr>
+  <tr><td>Khung màn hình</td><td>Viền vùng người chơi thấy (rộng 1218 / 1485 / 1980 px)</td></tr>
+  <tr><td>Số cost</td><td>Hiện số item phải đẩy vào hàng chờ, ngay trên map</td></tr>
+  <tr><td>Bản đồ kẹt</td><td>Chấm đỏ = item cần mà vẫn bị che lúc bot thua; vòng cam = item bot hay bấm nhầm</td></tr>
+ </tbody>
+</table></div>
+<h3>Các tab</h3>
+<div class="scroll"><table>
+ <thead><tr><th>Tab</th><th>Làm gì</th></tr></thead>
+ <tbody>
+  <tr><td>Thiết lập</td><td>Map, tên level, tỉ lệ che, bảng box, thêm nhiều box, đường cong độ khó, Tự xếp</td></tr>
+  <tr><td>Đồ &amp; sprite</td><td>Chọn sprite cụ thể cho từng item, random lại</td></tr>
+  <tr><td>Item</td><td>Danh sách item theo box, khoá / mở khoá</td></tr>
+  <tr><td>Kiểm tra</td><td>Báo lỗi: item nằm vùng cấm, ngoài map, sai số lượng…</td></tr>
+  <tr><td>Độ khó</td><td>Nhãn bot giỏi, APS ước tính, bảng từng box, 6 nhóm người chơi</td></tr>
+  <tr><td>Lưu</td><td>Level mới, thư viện, tải / mở file JSON, mở level thật L1–60</td></tr>
+ </tbody>
+</table></div>
+
+<h2 id="gen">3. Tạo 1 level mới</h2>
+<p>Trước khi làm, chọn mức cho level theo nhịp của chuỗi (xem phần 5).</p>
+<ol class="steps">
+ <li><b>Tạo level:</b> tab Lưu → <b>Level mới</b> → chọn map trong lưới ảnh. Đặt tên ở tab Thiết lập. Tên có số (ví dụ "Level 25") thì bot tự hiểu vị trí level.</li>
+ <li><b>Tô vùng cấm</b> nếu cần: bấm Tô vùng cấm, tô lên chỗ không được đặt đồ.</li>
+ <li><b>Thêm box:</b> tab Thiết lập → "Thêm nhiều box cùng category". Chọn category bằng hình, nhập số box và tổng số item → <b>Thêm các box</b>. Tool chia đều 3–6 món mỗi box (ví dụ 14 món, 3 box → 5, 5, 4). Chọn chỗ đặt: rải đều, thêm vào cuối hoặc chèn ngẫu nhiên.
+  <ul><li>Nhãn cạnh category (ví dụ "TB 0.80") là tỉ lệ người chơi nhận ra món đó. Thấp = khó nhìn.</li><li>Kéo số thứ tự để đổi chỗ box.</li></ul></li>
+ <li><b>Vẽ đường cong độ khó:</b> bấm hoặc kéo trên biểu đồ để đặt Easy / Normal / Hard / Super hard cho từng box. <b>Cột tím</b> là mục tiêu, nghĩa là bot giỏi phải đẩy 0 / 1 / 2 / 3 món vào hàng chờ ở box đó. Gợi ý: đỉnh ở khoảng 75% level, sau mỗi đỉnh là 2–3 box Easy.</li>
+ <li><b>Khoá món muốn giữ:</b> món khoá có viền xanh đậm và 🔒. Chọn sprite bằng tay sẽ tự khoá món đó.</li>
+ <li><b>Chọn bố cục ban đầu</b> (ô cạnh nút Tự xếp):
+  <div class="scroll"><table><thead><tr><th>Mẫu</th><th>Trông thế nào</th><th>Hợp với</th></tr></thead><tbody>
+   <tr><td>Từ bố cục hiện tại</td><td>Giữ chỗ hiện có, chỉ chỉnh thêm</td><td>Sửa level đã có</td></tr>
+   <tr><td>Rải đều cả map</td><td>Đồ rải khắp map, ít lớp</td><td>Easy, Medium</td></tr>
+   <tr><td>Chồng cao 3–4 đống</td><td>Vài đống dày, nhiều lớp</td><td>Hard trở lên</td></tr>
+   <tr><td>Gom cụm theo box</td><td>Đồ cùng box nằm gần nhau</td><td>Medium</td></tr>
+   <tr><td>Dồn giữa màn hình</td><td>Tập trung trong khung màn hình hẹp</td><td>Medium, Hard</td></tr>
+  </tbody></table></div></li>
+ <li><b>Chọn APS mục tiêu cả level:</b> Easy, Medium, Hard, Very Hard, hoặc tự nhập khoảng. Chọn "Không kiểm" nếu chỉ muốn bám cột tím.</li>
+ <li><b>Bấm Tự xếp.</b> Tool dời chỗ và đổi lớp các món chưa khoá. Bot giỏi chấm từng box theo cột tím. Cứ khoảng 1/10 số lần thử, bot v2 đo APS: dễ quá thì tool nâng đều mức các box, khó quá thì hạ xuống. "Số lần thử" 3000 mất khoảng 15–30 giây. Không ưng thì bấm Undo.</li>
+ <li><b>Đọc dòng kết quả</b> dưới nút: APS bot v2, có trong khoảng mục tiêu không, tool đã nâng hay hạ mức box bao nhiêu, box nào còn lệch. Chưa đạt thì bấm Tự xếp thêm lần nữa, hoặc tăng số lần thử.</li>
+ <li><b>Sửa tay</b> nếu cần, rồi xem tab Độ khó (phần 4). Tab Kiểm tra phải về 0 lỗi.</li>
+ <li><b>Lưu vào thư viện</b> và <b>tải file về máy</b> (phần 6).</li>
+</ol>
+
+<h2 id="do-kho">4. Đo độ khó</h2>
+<p>Mỗi lần sửa level, bot tự chạy lại trong khoảng nửa giây. Kết quả ở tab <b>Độ khó</b>.</p>
+<div class="ruler" role="img" aria-label="Thang APS"><div class="r1">Easy<small>&lt; 1,3</small></div><div class="r2">M<small>1,3–1,75</small></div><div class="r3">Hard<small>1,75–2,5</small></div><div class="r4">Very Hard<small>&gt; 2,5</small></div></div>
+<div class="scroll"><table>
+ <thead><tr><th>Số liệu</th><th>Ý nghĩa</th></tr></thead>
+ <tbody>
+  <tr><td>APS ước tính</td><td>Số lần chơi trung bình để thắng 1 lần, theo bot v2 (6 nhóm người chơi, có dùng booster). Đây là số chính để chốt level.</td></tr>
+  <tr><td>Thắng có booster / không trợ giúp</td><td>Tỉ lệ thắng của bot v2 khi được và không được dùng booster</td></tr>
+  <tr><td>Trợ giúp / ván</td><td>Số lần dùng booster hoặc Revive mỗi ván</td></tr>
+  <tr><td>Nhãn bot giỏi</td><td>Theo số lần hàng chờ chạm 3 ô: Easy &lt; 0,4 · Medium 0,4–2 · Hard ≥ 2. Cho biết độ khó do xếp lớp.</td></tr>
+  <tr><td>Bảng từng box</td><td>Số món vào hàng chờ so với mục tiêu; box lệch hiện màu đỏ</td></tr>
+  <tr><td>Chi tiết 6 nhóm</td><td>Giỏi / TB / yếu × hay / ít dùng booster: tỉ trọng, tỉ lệ thắng, mức dùng trợ giúp</td></tr>
+ </tbody>
+</table></div>
+<p><b>Ô "Vị trí level":</b> level càng về sau người chơi càng hay dùng booster, nên bot cần biết level đứng thứ mấy. Để trống thì tool lấy số trong tên level, không có số thì coi là 40.</p>
+<p><b>Cách đọc nhanh:</b> nhãn bot giỏi cao là khó vì xếp lớp. Bot giỏi thấp mà APS cao là khó vì món khó nhìn, dễ gây cảm giác "khó vô lý".</p>
+<h3>Phòng test bot (nhiều level một lúc)</h3>
+<ol class="steps">
+ <li>Bấm <b>🧪 Phòng test bot</b>.</li>
+ <li>Chọn level: level đang mở, thư viện, level thật của game (có nút chọn hết), hoặc nhiều file JSON từ máy.</li>
+ <li>Đặt số lượt cho bot → <b>Chạy test</b>.</li>
+ <li>Xem bảng: APS ước tính, thắng có booster, trợ giúp mỗi ván, nhãn bot giỏi, box hay thua. Bấm tên level để mở trong editor.</li>
+ <li>Tải <b>CSV</b> (mở bằng Excel) hoặc <b>JSON</b> (có chi tiết từng box và từng nhóm).</li>
+</ol>
+
+<h2 id="chuoi">5. Chuỗi level</h2>
+<figure class="fig"><img src="chuoi.webp" alt="Đường APS bot v2 của L1–20 bám sát chấm APS thật"><figcaption>L1–20: đường xanh là APS bot v2, chấm đen là APS thật của game.</figcaption></figure>
+<ol class="steps">
+ <li>Bấm <b>📈 Chuỗi level</b> ở góc trên editor.</li>
+ <li>Thêm level: level đang mở, từ thư viện, level thật của game, hoặc cả một đoạn (ví dụ L1 đến L20).</li>
+ <li>Sắp thứ tự bằng nút ↑ ↓, bỏ bằng ✕. Đặt "Level đầu chuỗi ở vị trí" nếu chuỗi không bắt đầu từ L1.</li>
+ <li>Bấm <b>Đo cả chuỗi</b>. Bot v2 đo APS từng level ở đúng vị trí của nó.</li>
+ <li>Xem biểu đồ và cảnh báo: 2 level Hard trở lên liền nhau, hoặc APS tăng vọt từ 0,8 trở lên. Tải CSV nếu cần.</li>
+</ol>
+<div class="box"><b>Gợi ý nhịp (tài liệu Day 2):</b> mẫu 10 level E E M E H E E M VH E. Không đặt 2 đỉnh khó liền nhau, sau Very Hard là một level dễ. Đoạn giữa game: Medium khoảng 1,35–1,7, Hard 1,75–2,5, Very Hard 3–4.</div>
+
+<h2 id="luu">6. Lưu và xuất Unity</h2>
+<p>Tất cả ở tab <b>Lưu</b>.</p>
+<ul>
+ <li><b>Lưu vào thư viện:</b> lưu cùng tên thì ghi đè. Thư viện chỉ nằm trong trình duyệt của máy này.</li>
+ <li><b>Tải file về máy:</b> ra file JSON đúng định dạng level Unity, gửi dev hoặc bỏ vào <code>Assets/_Game/Resources/Levels/</code>.</li>
+ <li><b>Mở file từ máy:</b> nạp file JSON có sẵn, của editor hoặc của Unity.</li>
+ <li><b>Level thật:</b> L1–60 của game (kèm bản _A/_B) để mở xem hoặc làm bản sao.</li>
+ <li>Bản đang làm dở tự lưu; tắt tool mở lại vẫn còn.</li>
+</ul>
+<p><b>Về file JSON:</b> trường <code>diff</code> trong <code>order</code> là mức box 0/1/2/3 = Easy / Normal / Hard / Super hard, chỉ để designer xem. Khoá <code>editorMeta</code> (nhãn, vùng cấm, món khoá) được Unity bỏ qua, nên file vẫn nạp vào game bình thường.</p>
+
+<h2 id="playtest">7. Cho người chơi thử</h2>
+<h3>Designer chuẩn bị</h3>
+<ol class="steps">
+ <li>Mở <a href="playtest.html?admin=1"><code>playtest.html?admin=1</code></a> (có <code>?admin=1</code> mới thấy tab Quản lý level).</li>
+ <li>Tab <b>Quản lý level</b>: thêm file JSON tải từ editor, hoặc level thật của game. Đặt nhãn muốn (Dễ / Vừa / Khó / Rất khó), vị trí level, bật hoặc tắt từng level.</li>
+ <li>Bấm <b>Tải playtest-levels.json</b>, rồi thay file cùng tên trong GitHub repo (Add file → Upload files). Khoảng 1 phút sau, người test mở link sẽ thấy danh sách mới.</li>
+ <li>Gửi người test link <code>playtest.html</code> (không có <code>?admin=1</code>).</li>
+</ol>
+<h3>Người test chơi</h3>
+<ol class="steps">
+ <li>Nhập tên, chọn level, chơi đủ 5 ván mỗi level. Không có booster; hàng chờ đầy thì được Revive tối đa 2 lần.</li>
+ <li>Sau mỗi ván trả lời "Có muốn chơi lại không".</li>
+ <li>Chơi xong, ở màn danh sách bấm <b>Tải file kết quả</b> và gửi file cho designer.</li>
+</ol>
+<h3>Designer xem kết quả</h3>
+<ol class="steps">
+ <li>Tab <b>Kết quả</b> → <b>Nhập file kết quả</b>, chọn một hoặc nhiều file của người test.</li>
+ <li>Xem từng level: nhãn đo so với nhãn muốn, tỉ lệ thắng không Revive, điểm suýt thua (10 / 7 / 3 / 2 / 0), đánh giá "khó tốt" hoặc "dễ tốt".</li>
+ <li>Tab <b>Bot chơi</b>: cho bot v2 chơi cùng luật để so với người. Nút 👁 xem bot chơi từng bước.</li>
+ <li>Tải CSV toàn bộ ván chơi nếu cần phân tích thêm.</li>
+</ol>
+
+<h2 id="loi">8. Lỗi hay gặp, giới hạn</h2>
+<div class="scroll"><table>
+ <thead><tr><th>Hiện tượng</th><th>Lý do</th><th>Cách xử lý</th></tr></thead>
+ <tbody>
+  <tr><td>Kéo cột tím mà đường bot không đổi</td><td>Cột tím chỉ là mục tiêu</td><td>Bấm Tự xếp</td></tr>
+  <tr><td>Tự xếp xong APS vẫn ngoài khoảng</td><td>Bố cục ban đầu quá dày (chồng cao, dồn giữa) hoặc quá ít lần thử</td><td>Tự xếp thêm lần nữa, tăng số lần thử, hoặc đổi sang "Rải đều"</td></tr>
+  <tr><td>Box khó vẫn thấp</td><td>Nhiều box khó liền nhau làm đầy hàng chờ; món trong hàng chờ tự lấp box sau; cùng category nằm lộ chỗ khác</td><td>Xen box Easy giữa các đỉnh; đổi category</td></tr>
+  <tr><td>Món khoá nằm trong vùng cấm</td><td>Tool không dời món khoá</td><td>Tab Kiểm tra báo đỏ, kéo tay ra</td></tr>
+  <tr><td>Người test không thấy level</td><td>Chưa thay <code>playtest-levels.json</code> trên repo, hoặc trình duyệt còn bản cũ</td><td>Upload file mới, đợi 1 phút, tải lại trang</td></tr>
+  <tr><td>Thư viện level trống ở máy khác</td><td>Thư viện chỉ lưu trong trình duyệt</td><td>Dùng file JSON để chuyển level</td></tr>
+ </tbody>
+</table></div>
+<h3>Giới hạn đã biết</h3>
+<ul>
+ <li>Bot v2 đoán L1–5 dễ hơn thật nhiều (L5 thật 5,18, bot 1,66). Level cho người mới cần playtest thêm.</li>
+ <li>Sai số APS ước tính khoảng 0,10–0,13 trên L6–60.</li>
+ <li>Mốc Easy / Normal / Hard / Super hard = 0 / 1 / 2 / 3 món vào hàng chờ mỗi box đang dùng tạm.</li>
+ <li>Chưa có ảnh nền cho map của L41–60 (nền xám); kết quả bot không bị ảnh hưởng.</li>
+ <li>Mã item có thể đổi khi game cập nhật asset. Game lên version mới thì cần cập nhật lại danh mục item.</li>
+</ul>
+</main>
+</div>
+</body></html>

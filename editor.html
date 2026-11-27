@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+</head><body style="margin:0">
+<meta charset="utf-8">
+<title>Happy Tidy level editor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday work tool for a game designer
+   IDEA the game screen itself: room board with real sprites, box strip and queue tray when playing
+   PICTURE the live room map, zoomable, with cost numbers and coverer outlines
+   COLOUR white panels, ink, one blue accent, tomato for errors and danger
+   TYPE Nunito 800 + Nunito
+   LAYOUT laptop: board fills left, tabbed side panel right; phone: board on top (65vh), panel below */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#14161a);--ink:light-dark(#1b1d22,#eceae4);--mute:light-dark(#5b626e,#a3a9b3);--line:light-dark(#dde0e5,#2f343c);--panel:light-dark(#f4f6f7,#1c1f25);--hot:light-dark(#d23f29,#ff6b55);--ok:light-dark(#2b8a55,#5cc98d);--acc:light-dark(#1d5d8a,#7cb8e6);--warn:light-dark(#a86a00,#f2b84b);--stage:light-dark(#d9dde2,#0e1013)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Nunito,system-ui,sans-serif;overflow-x:clip}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left,0px)) 8px;border-bottom:1px solid var(--line)}
+h1{font-size:24px;line-height:1.1;margin:0;font-weight:800;letter-spacing:-.01em}
+header .sub{color:var(--mute);font-size:13px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 410px;height:calc(100% - 49px)}
+.stagewrap{position:relative;background:var(--stage);overflow:hidden;display:flex;flex-direction:column}
+.tools{display:flex;flex-wrap:wrap;gap:6px;padding:8px;align-items:center;background:var(--bg);border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:34px}
+.seg button.on{background:var(--ink);color:var(--bg)}
+button{font:inherit;font-size:13px;font-weight:700;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:5px 10px;min-height:34px;cursor:pointer}
+button:hover{border-color:var(--ink)}
+button:disabled{opacity:.45;cursor:default}
+button.pri{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button.danger{color:var(--hot)}
+.chk{display:inline-flex;gap:5px;align-items:center;font-size:13px;font-weight:600}
+.canvasbox{position:relative;flex:1;min-height:0}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.overlay{position:absolute;left:8px;right:8px;display:flex;gap:6px;pointer-events:none;justify-content:center}
+.overlay.top{top:8px}.overlay.bot{bottom:8px}
+.bx{pointer-events:none;background:var(--bg);border:2px solid var(--ink);border-radius:12px;padding:4px 10px;display:flex;align-items:center;gap:8px;min-width:150px}
+.bx img{width:34px;height:34px;object-fit:contain}
+.bx b{font-size:13px}.bx small{color:var(--mute)}
+.slot{width:52px;height:52px;background:var(--bg);border:2px dashed var(--line);border-radius:10px;display:grid;place-items:center}
+.slot img{width:42px;height:42px;object-fit:contain}
+.slot.full{border-style:solid;border-color:var(--ink)}
+.overlay.bot.warn .slot{border-color:var(--hot)}
+.pill{pointer-events:none;background:var(--bg);border-radius:10px;padding:6px 10px;font-weight:800;border:1px solid var(--line)}
+.pill.lose{color:var(--hot)}.pill.win{color:var(--ok)}
+.status{position:absolute;left:8px;bottom:8px;font-size:12px;color:var(--mute);background:color-mix(in srgb,var(--bg) 85%,transparent);padding:3px 8px;border-radius:7px;pointer-events:none;max-width:70%}
+.side{border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+.tabs{display:flex;flex-wrap:wrap;gap:2px;padding:6px 6px 0;border-bottom:1px solid var(--line)}
+.tabs button{border:0;border-radius:8px 8px 0 0;background:transparent;min-height:34px;padding:4px 9px}
+.tabs button.on{background:var(--bg);border:1px solid var(--line);border-bottom-color:var(--bg);margin-bottom:-1px}
+.pane{overflow:auto;padding:12px;flex:1}
+h2{font-size:16px;margin:14px 0 8px;font-weight:800}
+h2:first-child{margin-top:0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.form label{display:grid;gap:2px;font-size:12px;color:var(--mute);font-weight:600}
+.form .full{grid-column:1/-1}
+input,select,textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 7px;width:100%}
+input[type=checkbox]{width:auto}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.hint{font-size:12px;color:var(--mute);margin:6px 0}
+.boxes{display:grid;gap:6px}
+.brow{display:grid;grid-template-columns:22px 34px minmax(0,1fr) 54px 74px 26px;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:5px 6px}
+.brow.drag{opacity:.4}
+.brow .n{font-weight:800;text-align:center;cursor:grab}
+.brow img{width:32px;height:32px;object-fit:contain}
+.brow select,.brow input{font-size:13px;padding:3px 4px}
+.flag{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:0 5px;margin-left:4px}
+.flag.hard{background:color-mix(in srgb,var(--hot) 20%,var(--bg));color:var(--hot)}
+.flag.mid{background:color-mix(in srgb,var(--warn) 22%,var(--bg));color:var(--warn)}
+.flag.easy{background:color-mix(in srgb,var(--ok) 20%,var(--bg));color:var(--ok)}
+.x{border:0;background:none;color:var(--mute);min-height:0;padding:0;font-size:16px}
+.group{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px}
+.group .gh{display:flex;justify-content:space-between;gap:6px;align-items:center;font-weight:800;margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{position:relative;width:52px;height:52px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;background:var(--panel);cursor:pointer;padding:0}
+.chip img{max-width:44px;max-height:44px}
+.chip.sel{outline:3px solid var(--acc)}
+.chip .lk{position:absolute;right:-6px;top:-7px;font-size:11px;background:#1d5d8a;color:#fff;border-radius:10px;padding:1px 3px;line-height:1.2}
+.chip.locked{border:3px solid #1d5d8a;background:light-dark(#e3eef7,#1f3446)}
+.lockpill{display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:12px;border-radius:12px;padding:2px 9px}.lockpill.on{background:#1d5d8a;color:#fff}.lockpill.off{background:var(--panel);color:var(--mute);border:1px dashed var(--line)}
+.lockbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border-radius:10px;padding:8px 10px;margin:8px 0}
+.chip.bad{border-color:var(--hot);border-width:2px}
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:5px;margin-top:8px;max-height:260px;overflow:auto;padding:4px;border:1px dashed var(--line);border-radius:8px}
+.picker .chip{width:auto}
+.picker .chip small{position:absolute;bottom:0;left:2px;font-size:10px;color:var(--mute)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.k{border-top:2px solid var(--line);padding-top:4px}
+.k .v{font-size:22px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.k .l{font-size:12px;color:var(--mute)}
+.k.main{grid-column:1/-1;border-color:var(--acc)}
+.curve{border:1px solid var(--line);border-radius:10px;background:var(--bg);touch-action:none}.curve canvas{display:block;width:100%;cursor:ns-resize}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.mbox{background:var(--bg);color:var(--ink);border-radius:14px;width:min(980px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.mhead{display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}.mhead b{font-size:17px}.mhead input{flex:1;min-width:120px}
+.mtabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--line)}.mtabs button{min-height:28px;padding:2px 10px;font-size:12px}.mtabs button.on{background:var(--ink);color:var(--bg)}
+.mgrid{flex:1 1 auto;min-height:0;grid-auto-rows:max-content;align-content:start;overflow:auto;padding:12px 14px;display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}.mgrid.bgs{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.ccard{height:auto;min-height:0;overflow:hidden;border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;background:var(--panel);text-align:left;display:block;font-weight:600}.ccard:hover{border-color:var(--acc)}.ccard.on{outline:3px solid var(--acc)}
+.cstrip{height:42px;background-image:url(data/catthumbs.webp);background-repeat:no-repeat;background-size:756px auto;margin-bottom:6px}
+.ccard .nm{font-weight:800;font-size:14px}.ccard small{color:var(--mute);font-weight:600}
+.bgcard img{width:100%;aspect-ratio:1573/2048;object-fit:cover;border-radius:6px;display:block;margin-bottom:4px}
+.catbtn{display:flex;align-items:center;gap:6px;width:100%;text-align:left;font-size:13px;padding:3px 8px;min-height:30px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.bgbtn{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:6px}.bgbtn img{width:54px;height:70px;object-fit:cover;border-radius:6px}
+.lib{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:6px}.lib li{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 8px}.lib li span{flex:1;min-width:0}.lib li small{color:var(--mute)}
+.steps{margin:4px 0 10px;padding-left:20px}.steps li{margin:3px 0}
+.lab{position:fixed;inset:0;background:var(--bg);z-index:40;display:flex;flex-direction:column}
+.labhead{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line)}.labhead b{font-size:18px}
+.labbody{flex:1;min-height:0;display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr)}
+.labside{overflow:auto;padding:10px 16px;border-right:1px solid var(--line);background:var(--panel)}.labmain{overflow:auto;padding:10px 16px}
+.lbh{font-size:13px;margin:12px 0 4px;display:flex;gap:6px;align-items:center}.lbl{display:flex;flex-direction:column;gap:2px;max-height:240px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+.lbl label{display:flex;gap:6px;align-items:center;font-size:13px}.lbl label small{color:var(--mute)}
+.lbt{border-collapse:collapse;font-size:13px;width:100%}.lbt th,.lbt td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:right;white-space:nowrap}.lbt th{position:sticky;top:0;background:var(--bg);font-size:12px}.lbt td:first-child,.lbt th:first-child,.lbt td:nth-child(2),.lbt th:nth-child(2){text-align:left}
+.lbt .lb{font-weight:800;border-radius:6px;padding:1px 6px}.lb.Easy{background:#d9f2e2;color:#1d6b3f}.lb.Medium{background:#fdf0cf;color:#8a5a00}.lb.Hard{background:#fadbd5;color:#9a2b1a}
+@media (max-width:760px){.labbody{grid-template-columns:1fr}.labside{border-right:0;border-bottom:1px solid var(--line)}}
+.bad{color:var(--hot)}.good{color:var(--ok)}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:4px 5px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{color:var(--mute);font-weight:700}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+.scroll{overflow-x:auto}
+.issues{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.issues li{background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--hot);border-radius:8px;padding:6px 8px;cursor:pointer}
+.issues li.warn{border-left-color:var(--warn)}
+.issues li.ok{border-left-color:var(--ok);cursor:default}
+textarea{font:12px/1.4 ui-monospace,monospace;min-height:120px}
+.sel-info{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;gap:10px;align-items:center}
+.sel-info img{width:64px;height:64px;object-fit:contain}
+.grid2{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.loading{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;color:var(--mute)}
+@media(max-width:900px){.app{grid-template-columns:minmax(0,1fr);height:auto}.stagewrap{height:65vh}.side{border-left:0;border-top:1px solid var(--line)}.pane{overflow:visible}}
+</style>
+
+<header><h1>Happy Tidy level editor</h1><span class="sub" id="hdr">Đang tải dữ liệu…</span><button id="seqOpen" style="margin-left:auto">📈 Chuỗi level</button><button id="labOpen" class="pri">🧪 Phòng test bot</button></header>
+<div class="app">
+ <div class="stagewrap">
+  <div class="tools">
+   <span class="seg" id="modes"><button data-m="edit" class="on">Sửa</button><button data-m="play">Chơi thử</button><button data-m="paint">Tô vùng cấm</button></span>
+   <button id="undo" title="Ctrl+Z">↶</button><button id="redo" title="Ctrl+Y">↷</button>
+   <button id="zin">+</button><button id="zout">−</button><button id="fit">Vừa khung</button>
+   <label class="chk"><input type="checkbox" id="showFrame" checked>Khung màn hình</label>
+   <label class="chk"><input type="checkbox" id="showCost">Số cost</label><label class="chk" title="Bot trung bình chơi 300 lượt: chấm đỏ = món cần mà còn kẹt trên map lúc bot thua; vòng cam = món bot hay bấm nhầm vào hàng chờ"><input type="checkbox" id="showHeat">Bản đồ kẹt</label>
+   <span id="playTools" hidden><button id="reset">Chơi lại</button> <button id="pundo">Lùi 1 tap</button> <select id="pbot" title="Chọn bot" style="width:auto;min-height:34px"><option value="avg">Bot trung bình</option><option value="skilled">Bot giỏi</option></select> <button id="bot1">1 bước</button> <button id="autoPlay">▶ Chơi hết màn</button> <button id="rpRec" title="Bot chơi 1 lượt rồi cho tua lại từng tap">🎬 Xem lại 1 lượt</button><span id="rpBox" hidden style="display:inline-flex;gap:6px;align-items:center"><button id="rpPrev">◀</button><input type="range" id="rpS" min="0" value="0" style="width:180px"><button id="rpNext">▶</button></span></span>
+  </div>
+  <div class="canvasbox" id="cbox"><canvas id="cv"></canvas><div class="loading" id="loading">Đang tải…</div>
+   <div class="overlay top" id="ovTop" hidden></div><div class="overlay bot" id="ovBot" hidden></div><div class="status" id="status"></div><div class="status" id="rpTxt" hidden style="bottom:auto;top:96px;max-width:70%"></div></div>
+ </div>
+ <aside class="side">
+  <nav class="tabs" id="tabs"><button data-t="setup" class="on">Thiết lập</button><button data-t="items">Đồ & sprite</button><button data-t="sel">Item</button><button data-t="check">Kiểm tra</button><button data-t="diff">Độ khó</button><button data-t="save">Lưu</button></nav>
+
+  <section class="pane" id="t-setup">
+   <h2>Phòng</h2>
+   <div class="form">
+    <div class="full"><div class="hint" style="margin:0 0 4px">Ảnh nền (map)</div><button class="bgbtn" id="bgBtn"></button><select id="bgSel" hidden></select></div>
+    <label>Tên level<input id="lvName" placeholder="Ví dụ 41"></label>
+    <label>Tỉ lệ che (%)<input id="thr" type="number" value="1" min="0.1" max="100" step="0.5"></label>
+    <label>Ô vùng cấm (px map)<input id="cell" type="number" value="80" min="20" max="400" step="10"></label>
+    <label>Khung màn hình rộng × cao (px map)<input id="frame" value="1218x2640" list="framePresets"></label><datalist id="framePresets"><option value="1218x2640">Điện thoại dài 9:19.5</option><option value="1485x2640">Điện thoại 9:16</option><option value="1980x2640">Tablet 3:4</option></datalist>
+   </div>
+   <p class="hint">Che: item vẽ sau che item vẽ trước khi phủ từ ngưỡng này trở lên trên phần đặc (alpha &gt; 40) của item dưới. Game dùng 1%.</p>
+   <h2>Thứ tự box</h2>
+   <p class="hint">Kéo số thứ tự để đổi chỗ. Mức là độ khó mong muốn của box đó.</p>
+   <div class="boxes" id="boxes"></div>
+   <select id="addCat" hidden></select>
+   <div class="row"><button id="addBox">+ Thêm 1 box</button><button id="scatter">Rải lại item chưa khoá</button><button id="clrBox" class="danger">Xoá hết box</button></div>
+   <h2>Thêm nhiều box cùng category</h2>
+   <div class="form">
+    <div class="full"><button class="bgbtn" id="bkCat"><span>Bấm để chọn category ▾</span></button></div>
+    <label>Số box<input id="bkN" type="number" value="3" min="1" max="20"></label>
+    <label>Tổng số item<input id="bkT" type="number" value="12" min="3" max="120"></label>
+    <label class="full">Đặt các box này ở đâu<select id="bkPos"><option value="spread">Rải đều từ đầu tới cuối level</option><option value="end">Thêm vào cuối</option><option value="random">Chèn ngẫu nhiên</option></select></label>
+   </div>
+   <p class="hint" id="bkHint">Item được chia đều cho các box (mỗi box 3–6 món).</p>
+   <div class="row"><button class="pri" id="bkAdd">Thêm các box</button></div>
+   <h2>Tự xếp theo mức khó</h2>
+   <div class="curve"><canvas id="curve" height="190"></canvas></div>
+   <p class="hint" id="curveLeg"><b>Cột tím</b> = mức cậu muốn cho từng box (tím càng đậm càng khó); bấm hoặc kéo để đặt. <b>Đường xanh liền</b> = bot giỏi đo được, <b>đường cam đứt</b> = bot trung bình (số món phải đẩy vào hàng chờ ở box đó). <b>Chấm đỏ</b> dưới trục = box bot trung bình hay thua.</p>
+   <p class="hint"><b>Tự xếp</b> = tool tự dời vị trí và đổi lớp của item chưa khoá cho tới khi số món bot giỏi phải đẩy vào hàng chờ ở mỗi box gần với mức đã đặt: Easy 0 · Normal 1 · Hard 2 · Super hard 3. Item khoá giữ nguyên chỗ và lớp, không đặt vào vùng cấm. <b>Số lần thử</b> = số lần tool thử một thay đổi nhỏ (dời 1 item hoặc đổi lớp 2 item) rồi cho bot giỏi chơi lại để xem có sát mục tiêu hơn không; càng nhiều càng sát nhưng càng lâu (3000 ≈ 15 giây). Bấm Undo nếu không ưng.</p>
+   <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select id="genStart" title="Bố cục ban đầu trước khi tự xếp"><option value="keep">Từ bố cục hiện tại</option><option value="scatter">Mẫu: rải đều cả map</option><option value="pile">Mẫu: chồng cao thành 3–4 đống</option><option value="cluster">Mẫu: gom cụm theo box</option><option value="center">Mẫu: dồn giữa màn hình</option></select><label style="display:flex;gap:6px;align-items:center" title="Số lần tool thử dời 1 item hoặc đổi lớp 2 item. Càng nhiều càng sát mục tiêu nhưng chạy lâu hơn (3000 ≈ 15 giây).">Số lần thử <input id="genIt" type="number" value="3000" min="100" max="20000" step="100" style="width:90px"></label><button class="pri" id="genGo">Tự xếp</button></div>
+   <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px"><label style="display:flex;gap:6px;align-items:center">APS mục tiêu cả level <select id="genAps"><option value="">Không kiểm</option><option value="1,1.3">Easy (dưới 1,3)</option><option value="1.3,1.75" selected>Medium (1,3–1,75)</option><option value="1.75,2.5">Hard (1,75–2,5)</option><option value="2.5,4">Very Hard (trên 2,5)</option><option value="custom">Tự nhập</option></select></label><span id="genApsC" hidden style="display:flex;gap:4px;align-items:center">từ <input id="genA0" type="number" step="0.05" value="1.3" style="width:70px"> đến <input id="genA1" type="number" step="0.05" value="1.75" style="width:70px"></span></div>
+   <p class="hint">Bot giỏi chấm từng box theo cột tím. Cứ khoảng 1/10 số lần thử, bot v2 (6 nhóm người chơi) đo APS cả level: dễ quá thì tool nâng đều mức các box, khó quá thì hạ xuống, tới khi APS vào khoảng đã chọn.</p>
+   <div id="genRes" class="hint"></div>
+   <p class="hint"><b>Mẫu bố cục</b> chỉ đổi chỗ item chưa khoá, tránh vùng cấm, box về sau nằm lớp dưới. Rải đều: khắp map. Chồng cao: 3–4 đống dày, nhiều lớp (hợp level Hard trở lên). Gom cụm: đồ cùng box nằm gần nhau. Dồn giữa: tập trung trong khung màn hình hẹp.</p>
+  </section>
+
+  <section class="pane" id="t-items" hidden>
+   <div class="row" style="margin-top:0"><button class="pri" id="rndAll">Random lại sprite chưa khoá</button><label class="chk"><input type="checkbox" id="noDup" checked>Tránh trùng sprite</label></div>
+   <div class="lockbar"><span class="chip locked" style="width:30px;height:30px;cursor:default"><span class="lk">🔒</span></span><span><b>Viền xanh đậm + 🔒 = đang khoá</b>: giữ nguyên sprite, vị trí và lớp khi Random / Rải lại / Tự xếp.<br>Viền mỏng = đang mở (tool được phép đổi). Chọn sprite bằng tay sẽ tự khoá item đó.</span></div>
+   <div class="row" style="margin-top:0"><span id="lockCount" class="hint" style="margin:0"></span><button id="lockAll">🔒 Khoá tất cả</button><button id="unlockAll">🔓 Mở khoá tất cả</button></div>
+   <p class="hint">Bấm 1 ô để chọn item đó trên board và đổi sprite.</p>
+   <div id="itemGroups"></div>
+  </section>
+
+  <section class="pane" id="t-sel" hidden>
+   <div id="selBody"><p class="hint">Chưa chọn item. Bấm vào item trên board.</p></div>
+  </section>
+
+  <section class="pane" id="t-check" hidden>
+   <ul class="issues" id="issues"></ul>
+  </section>
+
+  <section class="pane" id="t-diff" hidden>
+   <div class="kpis" id="kpis"></div>
+   <div class="row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="display:flex;gap:6px;align-items:center">Vị trí level (cho bot v2) <input id="lvNo" type="number" min="1" max="999" placeholder="tự đoán" style="width:90px"></label><span class="hint" style="margin:0">Level càng sau, người chơi càng hay dùng booster (công thức học từ L6-20, chặn ở L40). Để trống: lấy số trong tên level, không có thì coi là 40.</span></div>
+   <details id="v2d"><summary>Chi tiết 6 nhóm người chơi (bot v2)</summary><div id="v2t" style="overflow-x:auto"></div></details>
+   <h2>Chạy tự động nhiều lần</h2>
+   <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select id="rBot"><option value="avg">Bot trung bình</option><option value="skilled">Bot giỏi</option></select><label style="display:flex;gap:6px;align-items:center">Số lượt <input id="rN" type="number" value="500" min="10" max="5000" step="10" style="width:90px"></label><button id="rGo" class="pri">Chạy</button></div>
+   <div id="rRes" class="hint"></div>
+   <h2>Nhãn designer</h2>
+   <div class="form">
+    <label class="full">Nhãn sau khi chơi thử<select id="dLabel"><option value="">Chọn sau khi chơi</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Super Hard</option></select></label>
+    <label class="full">Ý đồ level<textarea id="intent" rows="2" style="min-height:0;font:inherit;font-size:14px" placeholder="Ví dụ: đỉnh khó ở box 12 và box 20"></textarea></label>
+   </div>
+   <p class="hint" id="cmp"></p>
+   <h2>Từng box</h2>
+   <div class="scroll"><table id="btbl"></table></div>
+   <p class="hint">Bot giỏi: chơi 100 lượt, hoà thì chọn ngẫu nhiên; nhãn theo số lần hàng chờ chạm 3 slot (Easy &lt;0,4 · Medium 0,4–2 · Hard ≥2). Bot trung bình: mô phỏng người chơi thật theo log (tỉ lệ nhìn ra từng category, đào về món cần, không dùng booster), tự chạy 300 lượt mỗi khi sửa. Tỉ lệ thắng của nó gần với tỉ lệ thắng không trợ giúp của người chơi thật (L1–20, r = 0,95).</p>
+  </section>
+
+  <section class="pane" id="t-save" hidden>
+   <h2>Cách làm</h2>
+   <ol class="steps hint"><li><b>Tạo level mới:</b> bấm "Level mới", chọn map, rồi thêm box ở tab Thiết lập.</li><li><b>Lưu:</b> đặt Tên level ở tab Thiết lập, bấm "Lưu vào thư viện" (lưu cùng tên sẽ ghi đè). Bấm "Tải file về máy" khi cần file JSON gửi dev.</li><li><b>Mở lại để test:</b> mở từ thư viện, mở file JSON từ máy, hoặc mở level thật của game ở dưới. Sau đó sang tab Độ khó để cho bot chạy.</li></ol>
+   <p class="hint">Bản đang làm được tự lưu trong trình duyệt; mở lại tool là thấy lại.</p>
+   <div class="row" style="margin-top:0"><button id="newLv" class="danger">Level mới</button><button class="pri" id="libSave">Lưu vào thư viện</button><button id="dl">Tải file về máy</button><button id="upBtn">Mở file từ máy</button><input type="file" id="upFile" accept=".json,application/json" hidden></div>
+   <p class="hint" id="jmsg"></p>
+   <h2>Thư viện level <small class="hint" id="libWhere"></small></h2>
+   <ul class="lib" id="lib"></ul>
+   <details><summary class="hint">Dán / copy JSON bằng tay</summary>
+   <div class="row"><button id="exp">Hiện JSON hiện tại</button><button id="imp">Nhập JSON đã dán</button></div>
+   <textarea id="json" placeholder="Dán JSON level vào đây rồi bấm Nhập"></textarea></details>
+   <h2>Mở level thật của game</h2>
+   <div class="row" style="margin-top:0"><select id="realSel" style="flex:1"></select><button id="openReal">Mở</button></div>
+   <p class="hint">Level thật lấy từ project Unity. Mở để xem, so sánh, hoặc sửa thành level mới.</p>
+  </section>
+ </aside>
+</div>
+
+<div class="lab" id="seq" hidden><div class="labhead"><b>📈 Chuỗi level</b><span class="hint" style="margin:0">Xếp nhiều level thành 1 chuỗi, bot v2 đo APS từng level theo đúng vị trí, xem nhịp khó dễ cả chuỗi.</span><button id="seqClose" style="margin-left:auto">Đóng, về editor</button></div>
+ <div class="labbody"><div class="labside">
+  <h2>1. Thêm level vào chuỗi</h2>
+  <div class="row"><button id="sqCur">+ Level đang mở</button></div>
+  <h3 class="lbh">Thư viện của cậu</h3><div class="row"><select id="sqLib" style="flex:1"></select><button id="sqLibAdd">Thêm</button></div>
+  <h3 class="lbh">Level thật của game</h3><div class="row"><select id="sqReal" style="flex:1"></select><button id="sqRealAdd">Thêm</button></div>
+  <div class="row"><label style="display:flex;gap:6px;align-items:center">Từ L<input id="sqFrom" type="number" value="1" min="1" max="60" style="width:60px"></label><label style="display:flex;gap:6px;align-items:center">đến L<input id="sqTo" type="number" value="20" min="1" max="60" style="width:60px"></label><button id="sqRange">Thêm cả đoạn</button></div>
+  <h2>2. Thứ tự</h2>
+  <div class="row"><label style="display:flex;gap:6px;align-items:center">Level đầu chuỗi ở vị trí <input id="sqStart" type="number" value="1" min="1" max="999" style="width:70px"></label></div>
+  <ol class="lib" id="sqList"></ol>
+  <div class="row"><button id="sqClear" class="danger">Xoá chuỗi</button></div>
+  <h2>3. Chạy</h2>
+  <div class="row"><label style="display:flex;gap:6px;align-items:center">Ván mỗi nhóm <input id="sqN" type="number" value="80" min="20" max="1000" style="width:80px"></label><button class="pri" id="sqRun">▶ Đo cả chuỗi</button></div><p class="hint" id="sqProg"></p>
+ </div><div class="labmain">
+  <div class="row" style="margin-top:0"><b>APS ước tính theo vị trí</b><span style="margin-left:auto"><button id="sqCsv">Tải CSV</button></span></div>
+  <div class="curve"><canvas id="sqChart" height="300"></canvas></div>
+  <p class="hint"><b>Đường xanh</b> = APS bot v2 ước tính. <b>Chấm đen</b> = APS thật (chỉ level gốc L1–60). Nền màu = mức: Easy dưới 1,3 · Medium 1,3–1,75 · Hard 1,75–2,5 · Very Hard trên 2,5. Bot v2 đoán thấp ở L1–5 (người mới).</p>
+  <p id="sqSum" style="font-weight:700;margin:6px 0"></p><ul class="issues" id="sqWarn"></ul>
+  <div style="overflow-x:auto"><table class="tbl" id="sqTbl"></table></div>
+ </div></div></div>
+<div class="lab" id="lab" hidden><div class="labhead"><b>🧪 Phòng test bot</b><span class="hint" style="margin:0">Chọn nhiều level, cho bot chơi, nhận bảng ước tính độ khó và xuất CSV / JSON.</span><button id="labClose" style="margin-left:auto">Đóng, về editor</button></div>
+ <div class="labbody"><div class="labside">
+  <h2>1. Chọn level</h2>
+  <div class="row" style="margin-top:0"><button id="lbCur">+ Level đang mở</button><button id="lbFiles">+ File JSON từ máy</button><input type="file" id="lbFile" accept=".json,application/json" multiple hidden></div>
+  <h3 class="lbh">Thư viện của cậu</h3><div id="lbLib" class="lbl"></div>
+  <h3 class="lbh">Level thật của game <button id="lbAllReal" style="min-height:24px;padding:0 8px;font-size:12px">chọn hết</button> <button id="lbNoReal" style="min-height:24px;padding:0 8px;font-size:12px">bỏ hết</button></h3><div id="lbReal" class="lbl"></div>
+  <h3 class="lbh">Đã thêm từ editor / file</h3><div id="lbAdded" class="lbl"></div>
+  <h2>2. Cấu hình</h2>
+  <div class="form"><label>Lượt bot giỏi<input id="lbNs" type="number" value="100" min="10" max="2000"></label><label>Lượt bot trung bình<input id="lbNa" type="number" value="500" min="10" max="5000"></label></div>
+  <div class="row"><button class="pri" id="lbRun">▶ Chạy test</button><span id="lbProg" class="hint" style="margin:0"></span></div>
+ </div><div class="labmain">
+  <div class="row" style="margin-top:0"><b id="lbCount">Chưa có kết quả.</b><span style="margin-left:auto;display:flex;gap:6px"><button id="lbCsv">Tải CSV</button><button id="lbJson">Tải JSON</button><button id="lbClear" class="danger">Xoá kết quả</button></span></div>
+  <p class="hint">APS ước tính = 1 / tỉ lệ thắng của bot v2 (6 nhóm người chơi, có dùng booster; sai số TB 0,14–0,20 trên L21–60). Mức: Easy &lt;1,3 · Medium 1,3–1,75 · Hard 1,75–2,5 · Very Hard &gt;2,5. Vị trí level lấy từ số trong tên (không có thì coi là 40). Nhãn bot giỏi (hàng chờ chạm 3 slot TB: Easy &lt;0,4 · Medium 0,4–2 · Hard ≥2). Tỉ lệ thắng bot trung bình ≈ tỉ lệ thắng không dùng trợ giúp của người chơi thật (kiểm trên L1–20). Bấm tên level để mở trong editor.</p>
+  <div class="scroll"><table id="lbTbl" class="lbt"></table></div>
+ </div></div></div>
+<div class="modal" id="modal" hidden><div class="mbox"><div class="mhead"><b id="mTitle"></b><input id="mSearch" placeholder="Tìm theo tên…"><button id="mClose">Đóng</button></div><div class="mtabs" id="mTabs"></div><div class="mgrid" id="mGrid"></div></div></div>
+<script>
+{
+const MAPW=2028,MAPH=2640,BGW=1573,BGH=2048,QMAX=5;
+const DIFF=['Easy','Normal','Hard','Super hard'];
+const LBL=['Easy','Medium','Hard','Super Hard'];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let CAT={},SP={},CATS=[],DATA=null;
+let S={bg:'HT_BG_1',name:'',boxes:[],items:[],forb:new Set(),cell:80,thr:1,frame:[1218,2640],dLabel:'',intent:''};
+let SA=null,V2=null,AUTO=null,A=null,SK=null,G=null,ghist=[],mode='edit',sel=-1,hover=-1,uid=1,bid=1;
+let view={cx:0,cy:0,z:0.3};
+const UNDO=[],REDO=[];
+
+/* ---------- loading ---------- */
+const IMG={};function img(src){if(!IMG[src]){IMG[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}return IMG[src]}
+const IMGD={};function imgNow(src){if(!(src in IMGD)){IMGD[src]=null;img(src).then(i=>{IMGD[src]=i;draw()}).catch(()=>{})}return IMGD[src]}
+const THUMB={};function thumb(sid){if(THUMB[sid])return THUMB[sid];const s=SP[sid];if(!s)return '';const a=IMGD[s.atlas];if(!a){imgNow(s.atlas);return ''}const c=document.createElement('canvas');const k=64/Math.max(s.w,s.h);c.width=Math.max(1,Math.round(s.w*k));c.height=Math.max(1,Math.round(s.h*k));c.getContext('2d').drawImage(a,s.ax,s.ay,s.w,s.h,0,0,c.width,c.height);return THUMB[sid]=c.toDataURL()}
+function decode(m){const[c,r,b]=m;const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const o=new Uint8Array(c*r);for(let i=0;i<c*r;i++)o[i]=(u[i>>3]>>(7-(i&7)))&1;return{c,r,a:o}}
+function masks(s){if(!s.M48){s.M48=decode(s.m48);s.M96=decode(s.m96)}return s}
+
+/* ---------- geometry ---------- */
+const PH={w:120,h:120};
+function geo(it){const s=SP[it.sid];const key=it.x+','+it.y+','+it.sx+','+it.sy+','+it.a+','+it.sid;if(it._k===key)return it._g;
+ const w=s?s.w:PH.w,h=s?s.h:PH.h,r=it.a*Math.PI/180,co=Math.cos(r),si=Math.sin(r);let pts=[];
+ if(s){masks(s);const M=s.M48,st=Math.max(1,Math.max(w,h)/48);for(let i=0;i<M.r;i++)for(let j=0;j<M.c;j++)if(M.a[i*M.c+j]){const px=(st/2+j*st-w/2)*it.sx,py=(h/2-(st/2+i*st))*it.sy;pts.push(it.x+px*co-py*si,it.y+px*si+py*co)}}
+ const R=Math.hypot(w,h)/2*Math.max(Math.abs(it.sx),Math.abs(it.sy));it._k=key;return it._g={w,h,co,si,pts:new Float32Array(pts),R}}
+function inside(it,x,y){const g=geo(it),s=SP[it.sid];const dx=x-it.x,dy=y-it.y;const lx=(dx*g.co+dy*g.si)/it.sx,ly=(-dx*g.si+dy*g.co)/it.sy;const u=lx+g.w/2,v=g.h/2-ly;if(u<0||v<0||u>=g.w||v>=g.h)return false;if(!s)return true;const M=masks(s).M96,st=Math.max(1,Math.max(g.w,g.h)/96);const cj=Math.floor(u/st),ci=Math.floor(v/st);if(cj>=M.c||ci>=M.r)return false;return M.a[ci*M.c+cj]===1}
+function corners(it){const g=geo(it);return[[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>{const px=a*g.w/2*it.sx,py=b*g.h/2*it.sy;return[it.x+px*g.co-py*g.si,it.y+px*g.si+py*g.co]})}
+
+/* ---------- coverage analysis ---------- */
+function analyze(){const n=S.items.length,thr=S.thr/100,above=[],below=[],frac=new Float32Array(n);for(let i=0;i<n;i++){above.push([]);below.push([])}
+ const G_=S.items.map(geo);
+ for(let i=0;i<n;i++){const gi=G_[i],P=gi.pts,ns=P.length/2;if(!ns)continue;const hit=new Uint8Array(ns);
+  for(let j=i+1;j<n;j++){const gj=G_[j],a=S.items[i],b=S.items[j];if(Math.hypot(a.x-b.x,a.y-b.y)>gi.R+gj.R)continue;let c=0;for(let k=0;k<ns;k++)if(inside(b,P[2*k],P[2*k+1])){c++;hit[k]=1}if(c>=Math.max(1,thr*ns)){above[i].push(j);below[j].push(i)}}
+  let h=0;for(let k=0;k<ns;k++)h+=hit[k];frac[i]=h/ns}
+ const Wd=(n+31)>>5,cl=new Array(n),load=new Int32Array(n),dep=new Int32Array(n);let md=0;
+ for(let i=n-1;i>=0;i--){const b=new Uint32Array(Wd);let d=0;for(const j of above[i]){b[j>>5]|=1<<(j&31);for(let w=0;w<Wd;w++)b[w]|=cl[j][w];if(dep[j]+1>d)d=dep[j]+1}cl[i]=b;dep[i]=d;if(d>md)md=d;let c=0;for(let w=0;w<Wd;w++){let v=b[w];v=v-((v>>>1)&0x55555555);v=(v&0x33333333)+((v>>>2)&0x33333333);c+=(((v+(v>>>4))&0x0F0F0F0F)*0x01010101)>>>24}load[i]=c}
+ const cat=S.items.map(it=>SP[it.sid]?.cat??S.boxes[boxIdx(it.box)]?.cat??-1);
+ return{above,below,cl,load,dep,layers:n?md+1:0,frac,cat}}
+function bits(b,f){for(let w=0;w<b.length;w++){let v=b[w];while(v){const lo=v&-v;f(w*32+31-Math.clz32(lo));v^=lo}}}
+
+/* ---------- game + skilled bot ---------- */
+class Game{constructor(C,r){this.C=C;this.r=r||null;const n=S.items.length,B=S.boxes.length;this.rm=new Uint8Array(n);this.bc=Int32Array.from(C.above.map(a=>a.length));this.fill=new Int32Array(B);this.cost=new Int32Array(B);this.slots=[-1,-1];this.next=0;this.q=[];this.done=0;this.st=B?'play':'win';this.taps=0;this.peak=0;this.d3=0;this.d3box=new Int32Array(B);this.cap=QMAX;this.res=[];this.pr=0;this.off=0;this.helps=0;this.hb={M:0,C:0,B:0,WS:0,R:0};this.armed=true;this.openInto(0);this.openInto(1)}
+ need(b){return S.boxes[b].count-this.fill[b]}
+ openInto(k){if(this.next<S.boxes.length){const b=this.next++;this.slots[k]=b;this.fly(b)}else this.slots[k]=-1}
+ close(b){this.done++;const k=this.slots.indexOf(b);if(this.done===S.boxes.length){this.slots[k]=-1;this.st='win';return}this.openInto(k)}
+ fly(b){const cat=S.boxes[b].cat;for(const L of [this.q,this.res]){let i=0;while(i<L.length&&this.need(b)>0){if(this.C.cat[L[i]]===cat){L.splice(i,1);this.fill[b]++}else i++}}if(this.need(b)===0)this.close(b)}
+ match(cat){let best=-1;for(const b of this.slots)if(b>=0&&S.boxes[b].cat===cat&&this.need(b)>0&&(best<0||b<best))best=b;return best}
+ first(){let m=-1;for(const b of this.slots)if(b>=0&&(m<0||b<m))m=b;return m}
+ ok(i){return!this.rm[i]&&this.bc[i]===0}
+ pick(i,attr){if(this.st!=='play'||!this.ok(i))return false;this.rm[i]=1;for(const j of this.C.below[i])this.bc[j]--;this.taps++;const b=this.match(this.C.cat[i]);
+  if(b>=0){this.fill[b]++;if(this.need(b)===0)this.close(b)}else{this.q.push(i);const a=attr>=0?attr:this.first();if(a>=0)this.cost[a]++;if(this.q.length>=3&&this.q.length-1<3){this.d3++;const f=this.first();if(f>=0)this.d3box[f]++}if(this.pr>0)this.help();if(this.q.length>=this.cap){if(this.pr>0&&this.helps<6&&this.r()<this.pr){this.helps++;this.hb.R++;this.res.push(...this.q);this.q=[];this.armed=true}else this.st='lose'}}
+  if(this.q.length>this.peak)this.peak=this.q.length;return true}
+ move(){if(this.st!=='play')return null;const n=S.items.length;let bi=-1,bb=1e9,bu=-1,tie=1;
+  for(let i=0;i<n;i++){if(!this.ok(i))continue;const b=this.match(this.C.cat[i]);if(b<0)continue;const u=this.C.below[i].length;if(b<bb||(b===bb&&u>bu)){bi=i;bb=b;bu=u;tie=1}else if(this.r&&b===bb&&u===bu&&this.r()<1/++tie)bi=i}
+  if(bi>=0)return{pick:bi,target:bi,attr:bb};
+  let bt=-1,bq=1e9,bn=1e9,bp=-1,ba=-1;tie=1;
+  for(let t=0;t<n;t++){if(this.rm[t])continue;const b=this.match(this.C.cat[t]);if(b<0)continue;let q=0,nb=0,pk=-1;bits(this.C.cl[t],j=>{if(this.rm[j])return;nb++;if(this.match(this.C.cat[j])<0)q++;if(pk<0&&this.bc[j]===0)pk=j});if(pk<0)continue;
+   if(q<bq||(q===bq&&nb<bn)){bt=t;bq=q;bn=nb;bp=pk;ba=b;tie=1}else if(this.r&&q===bq&&nb===bn&&this.r()<1/++tie){bt=t;bp=pk;ba=b}}
+  return bt<0?null:{pick:bp,target:bt,attr:ba}}
+ /* bot v2 boosters (bot.py): at queue 4 once per danger, use 1 booster with prob pr; mix Vacuum 43% / Bloom 26% / +box 20% / +slot 11% */
+ help(){const L=this.q.length;if(L<4){this.armed=true;return}if(!this.armed||L>=this.cap||this.helps>=6)return;this.armed=false;if(this.r()>=this.pr)return;
+  const u=this.r();const b=u<.43?'M':u<.69?'C':u<.89?'B':'WS';this.helps++;this.hb[b]++;
+  if(b==='C'){this.res.push(...this.q);this.q=[]}else if(b==='WS')this.cap++;
+  else if(b==='B'){if(this.slots.length<3&&this.next<S.boxes.length){this.slots.push(-1);this.openInto(2)}}
+  else{let tb=-1;for(const x of this.slots)if(x>=0&&this.need(x)>0&&(tb<0||this.need(x)<this.need(tb)))tb=x;if(tb<0)return;const cat=S.boxes[tb].cat,n=S.items.length,its=[];
+   for(let j=0;j<n;j++)if(!this.rm[j]&&this.C.cat[j]===cat)its.push(j);its.sort((a,c)=>this.bc[a]-this.bc[c]||c-a);
+   for(const j of its.slice(0,this.need(tb))){this.rm[j]=1;for(const k of this.C.below[j])this.bc[k]--;this.fill[tb]++}
+   let i=0;while(i<this.q.length&&this.need(tb)>0){if(this.C.cat[this.q[i]]===cat){this.q.splice(i,1);this.fill[tb]++}else i++}if(this.need(tb)===0)this.close(tb)}}
+ snap(){return structuredClone({rm:this.rm,bc:this.bc,fill:this.fill,cost:this.cost,slots:this.slots,next:this.next,q:this.q,done:this.done,st:this.st,taps:this.taps,peak:this.peak,d3:this.d3,d3box:this.d3box})}
+}
+const rng=seed=>{let s=seed>>>0||1;return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}};
+const PN={1:.78,2:.87,3:.90,4:.91,5:.91,6:.93},lg=p=>{p=Math.min(Math.max(p,1e-3),1-1e-3);return Math.log(p/(1-p))},sg=x=>1/(1+Math.exp(-x));
+function pSpot(c,n,off){const k=CAT[c];const s=(k&&k.spot!=null?k.spot:0.77)+(off?0.04:0);return sg(lg(s)+lg(PN[Math.min(n,6)])-lg(PN[1])+(off||0))}
+/* average-player bot (same logic as bot.py, no boosters): spot by category rate, else dig toward needed item with fewest blockers */
+function avgMove(g,r){if(g.st!=='play')return null;const n=S.items.length,C=g.C,oc=new Set();for(const b of g.slots)if(b>=0&&g.need(b)>0)oc.add(S.boxes[b].cat);
+ const vis=new Map(),unc=[];for(let i=0;i<n;i++)if(g.ok(i)){unc.push(i);const c=C.cat[i];if(oc.has(c)){if(!vis.has(c))vis.set(c,[]);vis.get(c).push(i)}}
+ const sp=[];for(const[c,l]of vis)if(r()<pSpot(c,l.length,g.off))sp.push(c);
+ if(sp.length){const l=vis.get(sp[Math.floor(r()*sp.length)]);const i=l[Math.floor(r()*l.length)];return{pick:i,attr:-1,target:i,kind:'spot'}}
+ const nong=unc.filter(j=>!oc.has(C.cat[j]));
+ if(nong.length&&r()<(vis.size?0.57:0.87)){const cls=[];for(let x=0;x<n;x++){if(g.rm[x]||!oc.has(C.cat[x])||g.ok(x))continue;const st=new Set();bits(C.cl[x],j=>{if(!g.rm[j])st.add(j)});cls.push([x,st])}
+  if(cls.length){const mn=Math.min(...cls.map(c=>c[1].size));const pool=r()<0.81?cls.filter(c=>c[1].size===mn):cls;const cand=new Set();for(const[,st]of pool)for(const j of st)cand.add(j);
+   const tops=nong.filter(j=>cand.has(j));if(tops.length){const i=tops[Math.floor(r()*tops.length)];const tg=pool.find(c=>c[1].has(i));return{pick:i,attr:-1,target:tg?tg[0]:i,kind:'dig'}}}}
+ const pool=nong.length?nong:unc;if(!pool.length)return null;const i=pool[Math.floor(r()*pool.length)];return{pick:i,attr:-1,target:i,kind:'random'}}
+function runSkilled(C,N){return runBot(C,N,'skilled',12345)}
+/* ---------- bot v2 (bot thread, 26/11): 6 player groups x 2 passes ----------
+ groups from real logs L6-20: tap accuracy (offset on spot odds) x how often they rescue when queue hits 4.
+ pass 1: no help -> nohelp win. rescue level = (0.432 - 0.212*nohelp + 0.0073*min(L,40)) / BASE_RES (fit on L6-20).
+ pass 2: help prob per group = min(1, resc*lf). APS = 1 / win. */
+const PERS=[['Giỏi, hay dùng booster',.945,.69,.155],['Giỏi, ít dùng booster',.946,.22,.193],['TB, hay dùng booster',.920,.715,.182],['TB, ít dùng booster',.921,.245,.160],['Yếu, hay dùng booster',.876,.781,.223],['Yếu, ít dùng booster',.884,.21,.086]],ALLACC=0.915,BASE_RES=0.48;
+function apsBand(a){return a<1.3?'Easy':a<1.75?'Medium':a<2.5?'Hard':'Very Hard'}
+function lvNo(){const v=+S.lvNo;if(v>0)return v;const m=String(S.name||'').match(/(\d+)/);return m?+m[1]:40}
+function runV2(C,N,L){const W=PERS.reduce((a,p)=>a+p[3],0);let nh=0;const g1=PERS.map((p,i)=>{const o=runBot(C,N,'avg',900+i,false,{off:lg(p[1])-lg(ALLACC),pr:0});nh+=o.win*p[3]/W;return o});
+ const lf=Math.max(0,0.432-0.212*nh+0.0073*Math.min(L,40))/BASE_RES;let win=0,hp=0;const per=PERS.map((p,i)=>{const pr=Math.min(1,p[2]*lf);const o=runBot(C,N,'avg',950+i,false,{off:lg(p[1])-lg(ALLACC),pr});win+=o.win*p[3]/W;hp+=o.helps*p[3]/W;return{name:p[0],share:p[3],nohelp:g1[i].win,win:o.win,helps:o.helps,pr}});
+ const aps=1/Math.max(win,0.02);return{N,L,nohelp:nh,lf,win,helps:hp,aps,band:apsBand(aps),per}}
+function runBot(C,N,kind,seed,rec,prm){const r=rng(seed),B=S.boxes.length,nI=S.items.length;const qh=rec?new Float32Array(nI):null,stk=rec?new Float32Array(nI):null;let taps=0;const qmax=new Int32Array(QMAX+1);let d3=0,win=0,peak=0,cost=new Float64Array(B),d3b=new Float64Array(B),lost=new Int32Array(B);
+ let helps=0;for(let k=0;k<N;k++){const g=new Game(C,r);if(prm){g.off=prm.off;g.pr=prm.pr}let guard=0;while(g.st==='play'&&guard++<6000){const m=kind==='avg'?avgMove(g,r):g.move();if(rec&&m){const ql=g.q.length;g.pick(m.pick,m.attr);if(g.q.length>ql)qh[m.pick]++;continue}if(!m){g.st='stuck';break}g.pick(m.pick,m.attr)}d3+=g.d3;peak+=g.peak;taps+=g.taps;qmax[Math.min(g.peak,QMAX)]++;if(g.st==='win')win++;else{const f=g.first();if(f>=0)lost[f]++;if(rec){const oc=new Set(g.slots.filter(b=>b>=0).map(b=>S.boxes[b].cat));for(let i=0;i<nI;i++)if(!g.rm[i]&&oc.has(C.cat[i])&&!g.ok(i))stk[i]++}}helps+=g.helps;for(let b=0;b<B;b++){cost[b]+=g.cost[b];d3b[b]+=g.d3box[b]}}
+ const m=d3/N;return{N,kind,helps:helps/N,heat:rec?{n:nI,q:[...qh].map(v=>v/N),s:[...stk].map(v=>v/N)}:null,taps:taps/N,qmax:[...qmax].map(v=>v/N),d3:m,peak:peak/N,win:win/N,label:m<0.4?'Easy':m<2?'Medium':'Hard',cost:[...cost].map(v=>v/N),d3b:[...d3b].map(v=>v/N),lost:[...lost].map(v=>v/N)}}
+
+/* ---------- state helpers ---------- */
+const snapS=()=>JSON.stringify({...S,forb:[...S.forb],items:S.items.map(({_k,_g,...r})=>r)});
+function loadSnap(t){const o=JSON.parse(t);S={...o,forb:new Set(o.forb)};syncInputs()}
+function commit(){const t=snapS();if(UNDO[UNDO.length-1]===t)return;UNDO.push(t);if(UNDO.length>80)UNDO.shift();REDO.length=0;updUndo()}
+function updUndo(){$('undo').disabled=!UNDO.length;$('redo').disabled=!REDO.length}
+$('undo').onclick=()=>{const cur=snapS();while(UNDO.length&&UNDO[UNDO.length-1]===cur)UNDO.pop();if(!UNDO.length){updUndo();return}REDO.push(cur);loadSnap(UNDO.pop());sel=-1;changed();updUndo()};
+$('redo').onclick=()=>{const cur=snapS();while(REDO.length&&REDO[REDO.length-1]===cur)REDO.pop();if(!REDO.length){updUndo();return}UNDO.push(cur);loadSnap(REDO.pop());sel=-1;changed();updUndo()};
+function catSprites(cat){return(CAT[cat]?.sprites||[]).filter(id=>SP[id])}
+function randSprite(cat,used){const all=catSprites(cat);if(!all.length)return null;const free=$('noDup').checked?all.filter(id=>!used.has(id)):all;const pool=free.length?free:all;return pool[Math.floor(Math.random()*pool.length)]}
+function boxIdx(id){return S.boxes.findIndex(b=>b.id===id)}
+function forbAt(x,y){const c=S.cell;return S.forb.has(Math.floor((x+MAPW/2)/c)+','+Math.floor((MAPH/2-y)/c))}
+function itemInForb(it){if(!S.forb.size)return false;const P=geo(it).pts;for(let k=0;k<P.length;k+=2)if(forbAt(P[k],P[k+1]))return true;if(!P.length&&forbAt(it.x,it.y))return true;return false}
+function itemOut(it){return corners(it).some(([x,y])=>Math.abs(x)>MAPW/2||Math.abs(y)>MAPH/2)}
+function freeCells(){const c=S.cell,out=[];for(let i=0;i*c<MAPW;i++)for(let j=0;j*c<MAPH;j++)if(!S.forb.has(i+','+j))out.push([i,j]);return out}
+/* place an item at random where it touches no forbidden cell; if impossible, keep the spot with the fewest forbidden points */
+function randPlace(it,cells){const c=S.cell;cells=cells||freeCells();if(!cells.length)return false;let best=null,bs=1e9;
+ for(let t=0;t<400;t++){const[i,j]=cells[Math.floor(Math.random()*cells.length)];it.x=Math.round(-MAPW/2+(i+Math.random())*c);it.y=Math.round(MAPH/2-(j+Math.random())*c);if(itemOut(it))continue;
+  if(!itemInForb(it))return true;const P=geo(it).pts;let n=0;for(let k=0;k<P.length;k+=2)if(forbAt(P[k],P[k+1]))n++;if(n<bs){bs=n;best=[it.x,it.y]}}
+ if(best){[it.x,it.y]=best}return false}
+/* keep items in line with box table: add/remove/replace unlocked items */
+function syncItems(){const used=new Set(S.items.map(i=>i.sid));const ids=new Set(S.boxes.map(b=>b.id));
+ S.items=S.items.filter(it=>it.lock||ids.has(it.box));
+ for(const b of S.boxes){let mine=S.items.filter(it=>it.box===b.id);
+  for(const it of mine)if(!it.lock&&SP[it.sid]?.cat!==b.cat){used.delete(it.sid);const s=randSprite(b.cat,used);if(s){it.sid=s;used.add(s)}}
+  while(mine.length>b.count){const k=[...mine].reverse().find(it=>!it.lock);if(!k)break;S.items.splice(S.items.indexOf(k),1);mine=mine.filter(x=>x!==k)}
+  while(mine.length<b.count){const s=randSprite(b.cat,used);if(!s)break;used.add(s);const it={uid:uid++,sid:s,box:b.id,x:0,y:0,sx:1,sy:1,a:0,lock:false};randPlace(it);
+   const bi=boxIdx(b.id);let pos=S.items.findIndex(o=>boxIdx(o.box)<bi);if(pos<0)pos=S.items.length;S.items.splice(pos,0,it);mine.push(it)}}}
+/* layout templates: place near a centre with gaussian spread, never outside the map or in a forbidden cell */
+function gauss(){return Math.sqrt(-2*Math.log(Math.random()||1e-9))*Math.cos(6.2832*Math.random())}
+function placeNear(it,cx,cy,sx,sy,fc){for(let t=0;t<80;t++){it.x=Math.round(cx+gauss()*sx);it.y=Math.round(cy+gauss()*sy);if(!itemOut(it)&&!itemInForb(it))return true}return randPlace(it,fc)}
+function freePt(fc,w,h){for(let t=0;t<200;t++){const[i,j]=fc[Math.floor(Math.random()*fc.length)];const x=-MAPW/2+(i+.5)*S.cell,y=MAPH/2-(j+.5)*S.cell;if(Math.abs(x)<w&&Math.abs(y)<h)return[x,y]}return[0,0]}
+function scatter(mode){mode=mode||'scatter';const B=S.boxes.length;const un=S.items.filter(i=>!i.lock);const fc=freeCells();const fw=(S.frame&&S.frame[0]?S.frame[0]:1218)/2-120;
+ const piles=Array.from({length:3+Math.floor(Math.random()*2)},()=>freePt(fc,fw,MAPH/2-500)),bc=new Map(S.boxes.map(b=>[b.id,freePt(fc,fw,MAPH/2-400)]));
+ for(const it of un){it.a=Math.round((Math.random()*2-1)*30);
+  if(mode==='pile'){const c=piles[Math.floor(Math.random()*piles.length)];placeNear(it,c[0],c[1],240,280,fc)}
+  else if(mode==='cluster'){const c=bc.get(it.box)||[0,0];placeNear(it,c[0],c[1],130,130,fc)}
+  else if(mode==='center')placeNear(it,0,0,fw*0.6,MAPH*0.22,fc);
+  else randPlace(it,fc)}
+ const key=new Map(S.items.map(it=>[it,it.lock?null:-boxIdx(it.box)+(Math.random()-0.5)*B*0.35]));
+ const lockedPos=S.items.map((it,i)=>it.lock?i:-1).filter(i=>i>=0);const sorted=un.sort((a,b)=>key.get(a)-key.get(b));const out=new Array(S.items.length);for(const i of lockedPos)out[i]=S.items[i];let k=0;for(let i=0;i<out.length;i++)if(!out[i])out[i]=sorted[k++];S.items=out}
+
+/* ---------- recompute ---------- */
+let skTimer=null;
+function changed(){saveDraft();A=analyze();G=new Game(A);ghist=[];if(sel>=S.items.length)sel=-1;draw();renderBoxes();renderItems();renderSel();renderChecks();clearTimeout(skTimer);skTimer=setTimeout(()=>{SK=runSkilled(A,100);SA=runBot(A,300,'avg',777,true);V2=null;draw();renderDiff();setTimeout(()=>{V2=runV2(A,120,lvNo());renderDiff()},30)},250);renderPlay();$('hdr').textContent=`${S.bg} · ${roomOf(S.bg)} · ${S.boxes.length} box · ${S.items.length} item · ${A.layers} lớp`}
+function roomOf(bg){return DATA.bgRoom[bg]||'phòng chưa rõ'}
+
+/* ---------- canvas ---------- */
+const cv=$('cv'),ctx=cv.getContext('2d');let CW=0,CH=0;
+function resize(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;CW=r.width;CH=r.height;cv.width=Math.round(CW*d);cv.height=Math.round(CH*d);ctx.setTransform(d,0,0,d,0,0);draw()}
+const toS=(x,y)=>[(x-view.cx)*view.z+CW/2,(view.cy-y)*view.z+CH/2];
+const toM=(sx,sy)=>[(sx-CW/2)/view.z+view.cx,view.cy-(sy-CH/2)/view.z];
+function fit(){view.cx=0;view.cy=0;view.z=Math.min(CW/MAPW,CH/MAPH)*0.96;draw()}
+let raf=0;function draw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;paint()})}
+function paint(){if(!CW)return;const st=getComputedStyle(document.documentElement);ctx.clearRect(0,0,CW,CH);
+ const bg=imgNow(`bg/${S.bg}.webp`);const[x0,y0]=toS(-MAPW/2,MAPH/2);if(bg)ctx.drawImage(bg,x0,y0,MAPW*view.z,MAPH*view.z);else{ctx.fillStyle='#bbb';ctx.fillRect(x0,y0,MAPW*view.z,MAPH*view.z)}
+ ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;ctx.strokeRect(x0,y0,MAPW*view.z,MAPH*view.z);
+ const c=S.cell;if(mode==='paint'){ctx.strokeStyle='rgba(0,0,0,.18)';ctx.beginPath();for(let x=0;x<=MAPW;x+=c){const[a]=toS(x-MAPW/2,0);ctx.moveTo(a,y0);ctx.lineTo(a,y0+MAPH*view.z)}for(let y=0;y<=MAPH;y+=c){const[,b]=toS(0,MAPH/2-y);ctx.moveTo(x0,b);ctx.lineTo(x0+MAPW*view.z,b)}ctx.stroke()}
+ ctx.fillStyle='rgba(210,63,41,.28)';for(const k of S.forb){const[i,j]=k.split(',').map(Number);const[a,b]=toS(i*c-MAPW/2,MAPH/2-j*c);ctx.fillRect(a,b,c*view.z,c*view.z)}
+ const play=mode==='play';const hl=new Set();const fo=hover>=0?hover:sel;if(A&&fo>=0&&fo<S.items.length&&mode==='edit')bits(A.cl[fo],j=>hl.add(j));
+ S.items.forEach((it,i)=>{if(play&&G.rm[i])return;const s=SP[it.sid];const[px,py]=toS(it.x,it.y);ctx.save();ctx.translate(px,py);ctx.rotate(-it.a*Math.PI/180);ctx.scale(view.z*it.sx,view.z*it.sy);
+  const a=s&&imgNow(s.atlas);if(a)ctx.drawImage(a,s.ax,s.ay,s.w,s.h,-s.w/2,-s.h/2,s.w,s.h);else{ctx.fillStyle='rgba(120,120,120,.6)';ctx.fillRect(-60,-60,120,120)}ctx.restore();
+  if(hl.has(i)||i===sel||i===fo||(play&&G.flash&&G.flash.has(i))){const P=corners(it).map(([x,y])=>toS(x,y));ctx.beginPath();P.forEach(([x,y],k)=>k?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.lineWidth=i===sel?3:2;ctx.setLineDash(i===sel?[]:[6,4]);ctx.strokeStyle=i===sel?'#1d5d8a':'#d23f29';ctx.stroke();ctx.setLineDash([])}
+  if(it.lock&&!play){ctx.beginPath();ctx.arc(px,py,11,0,7);ctx.fillStyle='#1d5d8a';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.font='11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🔒',px,py+1);ctx.textAlign='start';ctx.textBaseline='alphabetic'}});
+ if($('showHeat').checked&&SA&&SA.heat&&SA.heat.n===S.items.length){const H=SA.heat;S.items.forEach((it,i)=>{if(play&&G.rm[i])return;const[px,py]=toS(it.x,it.y);const r0=Math.max(10,geo(it).R*0.45*view.z);const vs=H.s[i],vq=H.q[i];if(vs>0.02){ctx.beginPath();ctx.arc(px,py,r0,0,7);ctx.fillStyle=`rgba(214,40,30,${Math.min(.85,.3+vs*3)})`;ctx.fill()}if(vq>0.05){ctx.beginPath();ctx.arc(px,py,r0+4,0,7);ctx.lineWidth=Math.min(8,2+vq*10);ctx.strokeStyle=`rgba(240,140,20,${Math.min(.95,.3+vq)})`;ctx.stroke()}})}
+ if($('showCost').checked&&A){ctx.font='800 12px Nunito,system-ui';ctx.textAlign='center';ctx.textBaseline='middle';S.items.forEach((it,i)=>{if(play&&G.rm[i])return;let v=A.load[i];if(play){v=0;bits(A.cl[i],j=>{if(!G.rm[j])v++})}const[px,py]=toS(it.x,it.y);ctx.beginPath();ctx.arc(px,py,10,0,7);ctx.fillStyle=v?'#fff':'#e4f8e9';ctx.fill();ctx.strokeStyle='#1b1d22';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#111';ctx.fillText(v,px,py+1)})}
+ if($('showFrame').checked){const[fw,fh]=S.frame;const[a,b]=toS(-fw/2,fh/2);ctx.strokeStyle='#1d5d8a';ctx.lineWidth=3;ctx.setLineDash([10,6]);ctx.strokeRect(a,b,fw*view.z,fh*view.z);ctx.setLineDash([])}}
+function hitAt(mx,my){for(let i=S.items.length-1;i>=0;i--){if(mode==='play'&&G.rm[i])continue;if(inside(S.items[i],mx,my))return i}return-1}
+
+/* ---------- pointer ---------- */
+let drag=null,paintV=null,pinch=null;const ptrs=new Map();
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.offsetX,e.offsetY]);if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),z:view.z};drag=null;return}
+ const[mx,my]=toM(e.offsetX,e.offsetY);
+ if(mode==='paint'){const k=Math.floor((mx+MAPW/2)/S.cell)+','+Math.floor((MAPH/2-my)/S.cell);commit();paintV=!S.forb.has(k);paintAt(mx,my);return}
+ const i=hitAt(mx,my);
+ if(mode==='play'){if(i<0){drag={pan:true,sx:e.offsetX,sy:e.offsetY,cx:view.cx,cy:view.cy};return}if(G.ok(i)){ghist.push(G.snap());G.pick(i,-1);G.flash=null}else{G.flash=new Set(A.above[i]);setTimeout(()=>{if(G)G.flash=null;draw()},700)}renderPlay();draw();return}
+ if(i>=0){sel=i;const it=S.items[i];drag={i,dx:mx-it.x,dy:my-it.y,moved:false};renderSel();renderItems()}else{sel=-1;renderSel();drag={pan:true,sx:e.offsetX,sy:e.offsetY,cx:view.cx,cy:view.cy}}draw()});
+cv.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,[e.offsetX,e.offsetY]);if(pinch&&ptrs.size===2){const[a,b]=[...ptrs.values()];view.z=Math.max(0.05,Math.min(4,pinch.z*Math.hypot(a[0]-b[0],a[1]-b[1])/pinch.d));draw();return}
+ const[mx,my]=toM(e.offsetX,e.offsetY);
+ if(mode==='paint'){if(paintV!==null)paintAt(mx,my);return}
+ if(drag&&drag.pan){view.cx=drag.cx-(e.offsetX-drag.sx)/view.z;view.cy=drag.cy+(e.offsetY-drag.sy)/view.z;draw();return}
+ if(drag&&drag.i!=null){const it=S.items[drag.i];if(!drag.moved){commit();drag.moved=true}it.x=Math.round(mx-drag.dx);it.y=Math.round(my-drag.dy);draw();status(`#${drag.i+1} ${it.sid} · x ${it.x} · y ${it.y}`);return}
+ if(mode==='edit'){const i=hitAt(mx,my);if(i!==hover){hover=i;draw();if(i>=0&&A)status(`#${i+1} ${S.items[i].sid} · ${catName(SP[S.items[i].sid]?.cat)} · box ${boxIdx(S.items[i].box)+1} · lớp ${i+1}/${S.items.length} · load ${A.load[i]} · bị che ${Math.round(A.frac[i]*100)}% diện tích${$('showHeat').checked&&SA&&SA.heat&&SA.heat.n===S.items.length?` · còn kẹt lúc bot TB thua ${Math.round(SA.heat.s[i]*100)}% lượt · bị bấm nhầm vào hàng chờ ${Math.round(SA.heat.q[i]*100)}% lượt`:''}`);else status('')}}});
+const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(drag&&drag.moved)changed();drag=null;if(paintV!==null){paintV=null;changed()}};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);cv.addEventListener('pointerleave',()=>{if(hover>=0){hover=-1;draw()}});
+cv.addEventListener('wheel',e=>{e.preventDefault();const[mx,my]=toM(e.offsetX,e.offsetY);const f=Math.exp(-e.deltaY*0.0015);view.z=Math.max(0.05,Math.min(4,view.z*f));const[nx,ny]=toM(e.offsetX,e.offsetY);view.cx+=mx-nx;view.cy+=my-ny;draw()},{passive:false});
+function paintAt(mx,my){if(Math.abs(mx)>MAPW/2||Math.abs(my)>MAPH/2)return;const k=Math.floor((mx+MAPW/2)/S.cell)+','+Math.floor((MAPH/2-my)/S.cell);if(paintV)S.forb.add(k);else S.forb.delete(k);draw()}
+function status(t){$('status').textContent=t}
+$('zin').onclick=()=>{view.z=Math.min(4,view.z*1.25);draw()};$('zout').onclick=()=>{view.z=Math.max(0.05,view.z/1.25);draw()};$('fit').onclick=fit;
+$('showFrame').onchange=draw;$('showHeat').onchange=()=>{draw();if($('showHeat').checked)status('Bản đồ kẹt (bot trung bình, 300 lượt): chấm đỏ = món cần nhưng còn bị che lúc bot thua (càng đậm càng hay kẹt); vòng cam = món bot hay bấm nhầm vào hàng chờ. Rê chuột lên item để xem số.')};
+$('showCost').onchange=draw;
+
+/* ---------- keyboard ---------- */
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();(e.shiftKey?$('redo'):$('undo')).click();return}
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();$('redo').click();return}
+ if(mode!=='edit'||sel<0)return;const K={Delete:'del',Backspace:'del',r:'rot+',e:'rot-',f:'flip',l:'lock',PageUp:'up',PageDown:'down','+':'big','=':'big','-':'small'};const a=(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'?'dup':K[e.key];if(a){e.preventDefault();act(a)}});
+
+/* ---------- item actions ---------- */
+function act(a){if(sel<0)return;const it=S.items[sel];commit();
+ switch(a){case'rot+':it.a=Math.round((it.a+5)*10)/10;break;case'rot-':it.a=Math.round((it.a-5)*10)/10;break;case'flip':it.sx=-it.sx;break;case'big':it.sx*=1.1;it.sy*=1.1;break;case'small':it.sx/=1.1;it.sy/=1.1;break;
+  case'lock':it.lock=!it.lock;break;case'up':if(sel<S.items.length-1){[S.items[sel],S.items[sel+1]]=[S.items[sel+1],S.items[sel]];sel++}break;case'down':if(sel>0){[S.items[sel],S.items[sel-1]]=[S.items[sel-1],S.items[sel]];sel--}break;
+  case'top':S.items.splice(sel,1);S.items.push(it);sel=S.items.length-1;break;case'bottom':S.items.splice(sel,1);S.items.unshift(it);sel=0;break;
+  case'dup':{const c={...it,uid:uid++,lock:false,x:it.x+40,y:it.y-40};delete c._k;delete c._g;S.items.splice(sel+1,0,c);sel++;break}
+  case'del':S.items.splice(sel,1);sel=-1;break}
+ if(a==='big'||a==='small'){it.sx=Math.round(it.sx*1000)/1000;it.sy=Math.round(it.sy*1000)/1000}changed()}
+
+/* ---------- panels ---------- */
+function catName(c){return CAT[c]?CAT[c].name.replace(/^[^_]+_/,''):(c==null?'không rõ':'mã '+c)}
+function catFlag(c){const k=CAT[c];if(!k||k.spot==null)return'<span class="flag mid">ít data</span>';const v=k.spot;if(k.cls==='Ít data')return`<span class="flag mid">ít data ${v.toFixed(2)}</span>`;return v<0.65?`<span class="flag hard">khó nhận ra ${v.toFixed(2)}</span>`:v<0.85?`<span class="flag mid">TB ${v.toFixed(2)}</span>`:`<span class="flag easy">dễ ${v.toFixed(2)}</span>`}
+function catOptions(selCat){const room=roomOf(S.bg);const sug=[];room.split(',').map(r=>r.trim()).forEach(r=>(DATA.roomCats[r]||[]).forEach(c=>{if(CAT[c]&&!sug.includes(c))sug.push(c)}));
+ const all=CATS.map(c=>c.cat).filter(c=>!sug.includes(c)).sort((a,b)=>catName(a).localeCompare(catName(b)));
+ const o=c=>{const k=CAT[c];const sp=k.spot!=null?` · nhìn ra ${k.spot.toFixed(2)}${k.spot<0.65?' ⚠':''}`:'';return`<option value="${c}"${c===selCat?' selected':''}>${esc(catName(c))} (${catSprites(c).length} sprite${sp})</option>`};
+ return(sug.length?`<optgroup label="Hay dùng ở ${esc(room)}">${sug.map(o).join('')}</optgroup>`:'')+`<optgroup label="Tất cả category">${all.map(o).join('')}</optgroup>`}
+function renderBoxes(){drawCurve();const sk=SK;$('boxes').innerHTML=S.boxes.map((b,i)=>{const t=catSprites(b.cat)[0];return`<div class="brow" draggable="true" data-i="${i}"><span class="n" title="Kéo để đổi chỗ">${i+1}</span><img alt="" src="${t?thumb(t):''}"><div><button class="catbtn" data-k="catpick" title="Bấm để chọn category bằng hình">${esc(catName(b.cat))} ▾</button><div>${catFlag(b.cat)}</div></div><input data-k="count" type="number" min="3" max="6" value="${b.count}"><select data-k="diff">${DIFF.map((d,k)=>`<option value="${k}"${k===b.diff?' selected':''}>${d}</option>`).join('')}</select><button class="x" data-k="del" title="Xoá box">✕</button></div>`}).join('')||'<p class="hint">Chưa có box. Thêm box ở dưới.</p>';
+ $('addCat').innerHTML=catOptions(+$('addCat').value||null)}
+$('boxes').addEventListener('change',e=>{const r=e.target.closest('.brow');if(!r)return;const b=S.boxes[+r.dataset.i];commit();const k=e.target.dataset.k;if(k==='cat')b.cat=+e.target.value;if(k==='count')b.count=Math.max(3,Math.min(6,+e.target.value||3));if(k==='diff')b.diff=+e.target.value;syncItems();changed()});
+$('boxes').addEventListener('click',e=>{const pk=e.target.closest('[data-k=catpick]');if(pk){const b=S.boxes[+pk.closest('.brow').dataset.i];openCatPicker(b.cat,c=>{if(c===b.cat)return;commit();b.cat=c;syncItems();changed()});return}if(e.target.dataset.k!=='del')return;const i=+e.target.closest('.brow').dataset.i;commit();S.boxes.splice(i,1);syncItems();changed()});
+let dragRow=-1;$('boxes').addEventListener('dragstart',e=>{const r=e.target.closest('.brow');dragRow=+r.dataset.i;r.classList.add('drag')});
+$('boxes').addEventListener('dragover',e=>e.preventDefault());
+$('boxes').addEventListener('drop',e=>{e.preventDefault();const r=e.target.closest('.brow');if(!r||dragRow<0)return;const to=+r.dataset.i;if(to!==dragRow){commit();const[b]=S.boxes.splice(dragRow,1);S.boxes.splice(to,0,b);changed()}dragRow=-1});
+$('boxes').addEventListener('dragend',()=>{dragRow=-1;renderBoxes()});
+let bkC=null;
+function bkInfo(){const N=Math.max(1,+$('bkN').value||1),T=+$('bkT').value||0;const ok=T>=3*N&&T<=6*N;const base=Math.floor(T/N),rem=T-base*N;$('bkHint').innerHTML=ok?`Sẽ thêm ${N} box ${bkC!=null?esc(catName(bkC)):''}: ${Array.from({length:N},(_,k)=>base+(k<rem?1:0)).join(', ')} món. Category này có ${bkC!=null?catSprites(bkC).length:'?'} sprite.`:`<span class="bad">Tổng item phải từ ${3*N} tới ${6*N} (mỗi box 3–6 món).</span>`;return ok}
+$('bkN').oninput=bkInfo;$('bkT').oninput=bkInfo;
+$('bkCat').onclick=()=>openCatPicker(bkC,c=>{bkC=c;const k=CAT[c];$('bkCat').innerHTML=`<div class="cstrip" style="background-position:${-(k.thx||0)*252}px ${-k.th*42}px;width:${42*Math.max(1,k.thn)}px;max-width:60%;margin:0"></div><span><b>${esc(catName(c))}</b> ${catFlag(c)}<br><small style="color:var(--acc)">Bấm để đổi ▾</small></span>`;bkInfo()});
+$('bkAdd').onclick=()=>{if(bkC==null){$('bkCat').click();return}if(!bkInfo())return;const N=Math.max(1,+$('bkN').value||1),T=+$('bkT').value,base=Math.floor(T/N),rem=T-base*N;commit();
+ const nb=Array.from({length:N},(_,k)=>({id:bid++,cat:bkC,count:base+(k<rem?1:0),diff:0}));const mode=$('bkPos').value;
+ if(mode==='end'||!S.boxes.length)S.boxes.push(...nb);
+ else{const L=S.boxes.length+N;const slots=mode==='spread'?nb.map((_,k)=>Math.min(L-1,Math.round((k+0.5)*L/N))):nb.map(()=>Math.floor(Math.random()*L)).sort((a,b)=>a-b);const out=[];const old=S.boxes.slice();let k=0;for(let p=0;p<L;p++){if(k<N&&(slots[k]<=p||old.length===0)){out.push(nb[k++])}else out.push(old.shift())}S.boxes=out.filter(Boolean)}
+ syncItems();changed();$('bkHint').textContent=`Đã thêm ${N} box ${catName(bkC)} (${T} món).`};
+$('clrBox').onclick=()=>{if(!S.boxes.length)return;commit();S.boxes=[];syncItems();changed()};
+$('addBox').onclick=()=>openCatPicker(null,c=>{if(!CAT[c])return;commit();S.boxes.push({id:bid++,cat:c,count:4,diff:0});syncItems();changed()});
+$('scatter').onclick=()=>{commit();scatter();changed()};
+/* ---------- generator: anneal positions + layers toward per-box target queue cost ---------- */
+/* ---------- bot test lab ---------- */
+let LBR=[],LBADD=[];
+async function saveFile(fn,text){let dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch(e){}
+ if(dl){try{await dl.save({filename:fn,data:text});return 'Đã tải '+fn}catch(e){return e&&e.code==='declined'?'Đã huỷ tải file.':'Không tải được ('+(e&&e.code||'lỗi')+').'}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text]));a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);return 'Đã tải '+fn}
+function lbRender(){const real=DATA.levelFiles;$('lbReal').innerHTML=real.map(f=>{const n=parseInt(f.slice(6),10);const l=DATA.levels.find(x=>x.level===n);return`<label><input type="checkbox" data-real="${f}">${f.replace('level_','Level ')}<small>${l?esc(l.room)+' · '+esc(l.label):''}</small></label>`}).join('');
+ $('lbLib').innerHTML=LIB.length?LIB.map((x,i)=>`<label><input type="checkbox" data-lib="${i}">${esc(x.name||'(chưa đặt tên)')}<small>${x.boxes} box · ${x.items} item</small></label>`).join(''):'<span class="hint" style="margin:0">Chưa lưu level nào.</span>';lbAddedRender()}
+function lbAddedRender(){$('lbAdded').innerHTML=LBADD.length?LBADD.map((x,i)=>`<label><input type="checkbox" data-add="${i}" checked>${esc(x.name)}<small>${esc(x.src)}</small></label>`).join(''):'<span class="hint" style="margin:0">Chưa có.</span>'}
+/* ---------- level sequence (progression board) ---------- */
+const REAL_APS={1:1.15,2:1.33,3:1.78,4:2.39,5:5.18,6:1.24,7:1.23,8:2.19,9:1.28,10:2.29,11:1.89,12:1.38,13:1.17,14:1.48,15:1.72,16:1.26,17:1.31,18:2.88,19:1.53,20:1.42,21:1.22,22:1.46,23:1.58,24:1.68,25:1.48,26:1.49,27:1.30,28:1.40,29:1.86,30:1.69,31:1.06,32:1.33,33:1.34,34:1.42,35:1.33,36:1.60,37:1.24,38:1.32,39:1.26,40:1.20,41:1.08,42:1.25,43:1.15,44:1.27,45:1.34,46:1.37,47:1.21,48:1.18,49:1.38,50:1.31,51:1.16,52:1.59,53:1.28,54:1.20,55:1.15,56:1.15,57:1.45,58:1.34,59:1.14,60:1.26};let SEQ=null,SEQR=null;
+function seqSave(){LSset('ht_seq',SEQ.map(({res,...x})=>x))}
+function seqRender(){$('sqLib').innerHTML=LIB.length?LIB.map((x,i)=>`<option value="${i}">${esc(x.name||'(chưa đặt tên)')}</option>`).join(''):'<option value="">(chưa lưu level nào)</option>';
+ $('sqReal').innerHTML=DATA.levelFiles.map(f=>`<option value="${f}">${f.replace('level_','Level ')}</option>`).join('');
+ const st=+$('sqStart').value||1;$('sqList').innerHTML=SEQ.length?SEQ.map((x,i)=>`<li><span><b>${st+i}.</b> ${esc(x.name)} <small>${esc(x.src)}</small></span><button data-sq="up" data-k="${i}" title="Lên">↑</button><button data-sq="down" data-k="${i}" title="Xuống">↓</button><button data-sq="del" data-k="${i}" class="danger" title="Bỏ">✕</button></li>`).join(''):'<li class="hint">Chưa có level nào.</li>';seqDraw()}
+function seqAdd(name,src,o,real){SEQ.push({name,src,o,real});SEQR=null;seqSave();seqRender()}
+async function seqGet(x){if(x.o)return x.o;return(await fetch('levels/'+x.real+'.json')).json()}
+$('seqOpen').onclick=()=>{if(!SEQ)SEQ=LS('ht_seq')||[];seqRender();$('seq').hidden=false};$('seqClose').onclick=()=>{$('seq').hidden=true};
+$('sqCur').onclick=()=>seqAdd(S.name||'Level đang mở','editor',JSON.parse(JSON.stringify(toUnity())));
+$('sqLibAdd').onclick=()=>{const r=LIB[+$('sqLib').value];if(r)seqAdd(r.name,'thư viện',r.json?JSON.parse(r.json):r.data)};
+$('sqRealAdd').onclick=()=>{const f=$('sqReal').value;seqAdd(f.replace('level_','Level '),'game',null,f)};
+$('sqRange').onclick=()=>{const a=+$('sqFrom').value,b=+$('sqTo').value;for(let l=a;l<=b;l++)if(DATA.levelFiles.includes('level_'+l)){SEQ.push({name:'Level '+l,src:'game',real:'level_'+l})}SEQR=null;seqSave();seqRender()};
+$('sqClear').onclick=()=>{SEQ=[];SEQR=null;seqSave();seqRender()};
+$('sqStart').onchange=()=>{SEQR=null;seqRender()};
+$('sqList').addEventListener('click',e=>{const b=e.target.closest('[data-sq]');if(!b)return;const k=+b.dataset.k,a=b.dataset.sq;if(a==='del')SEQ.splice(k,1);else{const j=a==='up'?k-1:k+1;if(j<0||j>=SEQ.length)return;[SEQ[k],SEQ[j]]=[SEQ[j],SEQ[k]]}SEQR=null;seqSave();seqRender()});
+$('sqRun').onclick=async()=>{if(!SEQ.length)return;const N=Math.max(20,Math.min(1000,+$('sqN').value||80)),st=+$('sqStart').value||1;$('sqRun').disabled=true;const t0=performance.now();const out=[];
+ for(let k=0;k<SEQ.length;k++){const x=SEQ[k];$('sqProg').textContent=`Đang đo ${k+1}/${SEQ.length}: ${x.name}…`;await new Promise(r=>setTimeout(r,15));const keep=S;
+  try{const o=await seqGet(x);S=parseLevel(o);const C=analyze();const v=runV2(C,N,st+k);const rn=x.real?parseInt(x.real.slice(6),10):null;out.push({pos:st+k,name:x.name,src:x.src,boxes:S.boxes.length,items:S.items.length,aps:v.aps,band:v.band,win:v.win,nohelp:v.nohelp,helps:v.helps,real:x.real&&/^level_\d+$/.test(x.real)?REAL_APS[rn]??null:null})}catch(e){out.push({pos:st+k,name:x.name,src:x.src,err:String(e.message||e)})}finally{S=keep}}
+ SEQR=out;$('sqRun').disabled=false;$('sqProg').textContent=`Xong ${SEQ.length} level trong ${((performance.now()-t0)/1000).toFixed(0)} giây.`;seqDraw()};
+const BANDS=[[0,1.3,'--ok'],[1.3,1.75,'--acc'],[1.75,2.5,'--warn'],[2.5,9,'--hot']];
+function seqDraw(){const cv=$('sqChart');if(!cv||$('seq').hidden)return;const d=devicePixelRatio||1,w=cv.clientWidth||600,h=300;cv.width=w*d;cv.height=h*d;const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);
+ const P={l:40,r:12,t:10,b:28},R_=SEQR||[],n=Math.max(SEQ.length,1),ymax=Math.max(3,...R_.map(r=>Math.max(r.aps||0,r.real||0)))*1.05;const X=i=>P.l+(i+0.5)*(w-P.l-P.r)/n,Y=v=>h-P.b-(Math.min(v,ymax))/ymax*(h-P.t-P.b);
+ x.font='11px Nunito,system-ui';for(const[a,b,c]of BANDS){if(a>=ymax)continue;x.fillStyle=cssv(c);x.globalAlpha=0.10;x.fillRect(P.l,Y(Math.min(b,ymax)),w-P.l-P.r,Y(a)-Y(Math.min(b,ymax)));x.globalAlpha=1}
+ x.fillStyle=cssv('--mute');x.strokeStyle=cssv('--line');for(let v=1;v<=ymax;v+=0.5){x.beginPath();x.moveTo(P.l,Y(v));x.lineTo(w-P.r,Y(v));x.stroke();x.fillText(v.toFixed(1),6,Y(v)+4)}
+ const st=+$('sqStart').value||1,every=Math.ceil(n/20);for(let i=0;i<SEQ.length;i+=every)x.fillText(String(st+i),X(i)-6,h-10);
+ if(!R_.length){x.fillText('Bấm "Đo cả chuỗi" để xem đường APS.',P.l+10,P.t+20);$('sqTbl').innerHTML='';$('sqWarn').innerHTML='';$('sqSum').textContent='';return}
+ x.strokeStyle=cssv('--acc');x.lineWidth=2.5;x.beginPath();let f=true;R_.forEach((r,i)=>{if(r.aps==null)return;f?x.moveTo(X(i),Y(r.aps)):x.lineTo(X(i),Y(r.aps));f=false});x.stroke();x.lineWidth=1;
+ R_.forEach((r,i)=>{if(r.aps!=null){x.fillStyle=cssv('--acc');x.beginPath();x.arc(X(i),Y(r.aps),3.5,0,7);x.fill()}if(r.real!=null){x.fillStyle=cssv('--ink');x.beginPath();x.arc(X(i),Y(r.real),3,0,7);x.fill()}});
+ const W=[];let run=0;R_.forEach((r,i)=>{if(r.err)W.push(`<li class="bad">${esc(r.name)}: lỗi ${esc(r.err)}</li>`);const hard=r.aps>=1.75;run=hard?run+1:0;if(run===2)W.push(`<li>Vị trí ${r.pos-1}–${r.pos}: 2 level Hard trở lên liền nhau (${esc(R_[i-1].name)}, ${esc(r.name)}).</li>`);
+  if(i>0&&r.aps-R_[i-1].aps>=0.8)W.push(`<li>Vị trí ${r.pos}: APS tăng vọt ${R_[i-1].aps.toFixed(2)} → ${r.aps.toFixed(2)}.</li>`)});
+ const ok=R_.filter(r=>r.aps!=null),cnt=b=>ok.filter(r=>r.band===b).length;$('sqSum').textContent=`Cả chuỗi: ${cnt('Easy')} Easy · ${cnt('Medium')} Medium · ${cnt('Hard')} Hard · ${cnt('Very Hard')} Very Hard. APS TB ${(ok.reduce((a,r)=>a+r.aps,0)/Math.max(1,ok.length)).toFixed(2)}.${W.length?'':' Không thấy 2 level khó liền nhau hay APS tăng vọt.'}`;$('sqWarn').innerHTML=W.join('');
+ $('sqTbl').innerHTML='<thead><tr><th>Vị trí</th><th>Level</th><th>Nguồn</th><th>Box</th><th>Item</th><th>APS ước tính</th><th>Mức</th><th>Thắng có booster</th><th>Thắng không trợ giúp</th><th>Trợ giúp/ván</th><th>APS thật</th></tr></thead><tbody>'+R_.map(r=>r.err?`<tr><td>${r.pos}</td><td>${esc(r.name)}</td><td colspan="9" class="bad">${esc(r.err)}</td></tr>`:`<tr><td>${r.pos}</td><td>${esc(r.name)}</td><td>${esc(r.src)}</td><td>${r.boxes}</td><td>${r.items}</td><td><b>${r.aps.toFixed(2)}</b></td><td>${r.band}</td><td>${Math.round(r.win*100)}%</td><td>${Math.round(r.nohelp*100)}%</td><td>${r.helps.toFixed(1)}</td><td>${r.real!=null?r.real.toFixed(2):''}</td></tr>`).join('')+'</tbody>'}
+window.addEventListener('resize',()=>{if(!$('seq').hidden)seqDraw()});
+$('sqCsv').onclick=async()=>{if(!SEQR)return;const cols=['pos','name','src','boxes','items','aps','band','win','nohelp','helps','real','err'];const rows=[cols.join(',')].concat(SEQR.map(r=>cols.map(c=>csvq(typeof r[c]==='number'?+r[c].toFixed(3):r[c])).join(',')));$('sqProg').textContent=await saveFile('happytidy_chuoi_level.csv','﻿'+rows.join('\n'))};
+$('labOpen').onclick=()=>{lbRender();$('lab').hidden=false};$('labClose').onclick=()=>{$('lab').hidden=true};
+$('lbCur').onclick=()=>{LBADD.push({name:(S.name||'Level đang mở')+' ('+new Date().toLocaleTimeString('vi-VN')+')',src:'editor',o:JSON.parse(JSON.stringify(toUnity()))});lbAddedRender()};
+$('lbFiles').onclick=()=>$('lbFile').click();
+$('lbFile').onchange=async()=>{for(const f of $('lbFile').files){try{const o=JSON.parse(await f.text());parseLevel(o);LBADD.push({name:o.levelName||f.name.replace(/\.json$/i,''),src:'file '+f.name,o})}catch(e){$('lbProg').textContent='Không đọc được '+f.name+': '+e.message}}$('lbFile').value='';lbAddedRender()};
+$('lbAllReal').onclick=()=>document.querySelectorAll('#lbReal input').forEach(x=>x.checked=true);$('lbNoReal').onclick=()=>document.querySelectorAll('#lbReal input').forEach(x=>x.checked=false);
+function testOne(o,Ns,Na){const keep=S;try{S=parseLevel(o);const C=analyze();const sk=runBot(C,Ns,'skilled',12345),av=runBot(C,Na,'avg',777);const lvn=(String(o.levelName||'')+' '+(o._name||'')).match(/(\d+)/);const v2=runV2(C,Math.max(20,Math.round(Na/5)),lvn?+lvn[1]:40);const tgt=S.boxes.map(b=>DIFF_T[b.diff]||0);
+  const topLose=av.lost.map((v,i)=>[v,i]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]).slice(0,3);
+  return{map:S.bg,room:roomOf(S.bg),boxes:S.boxes.length,items:S.items.length,layers:C.layers,coveredStart:C.above.filter(a=>a.length).length,label:sk.label,skDanger3:+sk.d3.toFixed(2),skPeak:+sk.peak.toFixed(2),skWin:+sk.win.toFixed(3),avWin:+av.win.toFixed(3),avDanger3:+av.d3.toFixed(2),avPeak:+av.peak.toFixed(2),avTaps:+av.taps.toFixed(1),apsEst:+v2.aps.toFixed(2),apsBand:v2.band,v2Win:+v2.win.toFixed(3),v2NoHelp:+v2.nohelp.toFixed(3),v2HelpsPerGame:+v2.helps.toFixed(2),v2Level:v2.L,v2Groups:v2.per.map(p=>({group:p.name,share:p.share,noHelpWin:+p.nohelp.toFixed(3),helpProb:+p.pr.toFixed(3),win:+p.win.toFixed(3),helpsPerGame:+p.helps.toFixed(2)})),
+   loseAt:topLose.map(([v,i])=>({box:i+1,category:catName(S.boxes[i].cat),pct:Math.round(v*100)})),missingSprites:S.items.filter(it=>!SP[it.sid]).length,
+   perBox:S.boxes.map((b,i)=>({box:i+1,category:catName(b.cat),count:b.count,target:DIFF[b.diff],skQueue:+sk.cost[i].toFixed(2),avQueue:+av.cost[i].toFixed(2),avLosePct:Math.round(av.lost[i]*100),offTarget:Math.abs(sk.cost[i]-tgt[i])>=0.75}))}}finally{S=keep}}
+$('lbRun').onclick=async()=>{const jobs=[];
+ document.querySelectorAll('#lbLib input:checked').forEach(x=>{const r=LIB[+x.dataset.lib];jobs.push({name:r.name,src:'thư viện',get:async()=>r.json?JSON.parse(r.json):r.data})});
+ document.querySelectorAll('#lbAdded input:checked').forEach(x=>{const r=LBADD[+x.dataset.add];jobs.push({name:r.name,src:r.src,get:async()=>r.o})});
+ document.querySelectorAll('#lbReal input:checked').forEach(x=>{const f=x.dataset.real;jobs.push({name:f.replace('level_','Level '),src:'game',get:async()=>(await fetch('levels/'+f+'.json')).json()})});
+ if(!jobs.length){$('lbProg').textContent='Chưa chọn level nào.';return}
+ const Ns=Math.max(10,Math.min(2000,+$('lbNs').value||100)),Na=Math.max(10,Math.min(5000,+$('lbNa').value||500));$('lbRun').disabled=true;const t0=performance.now();
+ for(let k=0;k<jobs.length;k++){const j=jobs[k];$('lbProg').textContent=`Đang chạy ${k+1}/${jobs.length}: ${j.name}…`;await new Promise(r=>setTimeout(r,20));
+  try{const o=await j.get();const r=testOne({...o,_name:j.name},Ns,Na);LBR.push({level:j.name,source:j.src,runsSkilled:Ns,runsAverage:Na,...r,_o:o})}catch(e){LBR.push({level:j.name,source:j.src,error:String(e.message||e)})}lbTable()}
+ $('lbRun').disabled=false;$('lbProg').textContent=`Xong ${jobs.length} level trong ${((performance.now()-t0)/1000).toFixed(0)} giây.`};
+function lbTable(){$('lbCount').textContent=LBR.length?`${LBR.length} kết quả`:'Chưa có kết quả.';
+ $('lbTbl').innerHTML='<thead><tr><th>Level</th><th>Nguồn</th><th>Map</th><th>Box</th><th>Item</th><th>Lớp</th><th>Bị che lúc đầu</th><th>APS ước tính (bot v2)</th><th>Thắng có booster</th><th>Trợ giúp/ván</th><th>Nhãn bot giỏi</th><th>Bot giỏi: chạm 3 TB</th><th>Bot giỏi thắng</th><th>Bot TB thắng</th><th>Bot TB: chạm 3 TB</th><th>Bot TB: đỉnh hàng chờ</th><th>Bot TB hay thua ở</th></tr></thead><tbody>'+
+ LBR.map((r,i)=>r.error?`<tr><td>${esc(r.level)}</td><td>${esc(r.source)}</td><td colspan="15" class="bad" style="text-align:left">Lỗi: ${esc(r.error)}</td></tr>`:`<tr><td><a href="#" data-open="${i}">${esc(r.level)}</a>${r.missingSprites?` <small class="bad">thiếu ${r.missingSprites} ảnh</small>`:''}</td><td>${esc(r.source)}</td><td>${esc(r.map)}</td><td>${r.boxes}</td><td>${r.items}</td><td>${r.layers}</td><td>${r.coveredStart}</td><td><b>${r.apsEst.toFixed(2)}</b> <small>${r.apsBand}</small></td><td>${Math.round(r.v2Win*100)}%</td><td>${r.v2HelpsPerGame.toFixed(1)}</td><td><span class="lb ${r.label}">${r.label}</span></td><td>${r.skDanger3.toFixed(2)}</td><td>${Math.round(r.skWin*100)}%</td><td><b>${Math.round(r.avWin*100)}%</b></td><td>${r.avDanger3.toFixed(2)}</td><td>${r.avPeak.toFixed(1)}</td><td>${r.loseAt.map(x=>`box ${x.box} ${esc(x.category)} (${x.pct}%)`).join(', ')}</td></tr>`).join('')+'</tbody>'}
+$('lbTbl').addEventListener('click',e=>{const a=e.target.closest('[data-open]');if(!a)return;e.preventDefault();const r=LBR[+a.dataset.open];commit();fromUnity(r._o);S.name=r.level;sel=-1;syncInputs();changed();fit();$('lab').hidden=true});
+$('lbClear').onclick=()=>{LBR=[];lbTable()};
+const csvq=v=>{v=v==null?'':String(v);return/[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+$('lbCsv').onclick=async()=>{if(!LBR.length)return;const cols=['level','source','map','room','boxes','items','layers','coveredStart','apsEst','apsBand','v2Win','v2NoHelp','v2HelpsPerGame','v2Level','label','skDanger3','skPeak','skWin','avWin','avDanger3','avPeak','avTaps','loseAt','runsSkilled','runsAverage','error'];
+ const rows=[cols.join(',')].concat(LBR.map(r=>cols.map(c=>csvq(c==='loseAt'?(r.loseAt||[]).map(x=>`box ${x.box} ${x.category} ${x.pct}%`).join(' | '):r[c])).join(',')));
+ $('lbProg').textContent=await saveFile('happytidy_bot_test_'+new Date().toISOString().slice(0,16).replace(/\D/g,'')+'.csv','﻿'+rows.join('\n'))};
+$('lbJson').onclick=async()=>{if(!LBR.length)return;const out=LBR.map(({_o,...r})=>r);$('lbProg').textContent=await saveFile('happytidy_bot_test_'+new Date().toISOString().slice(0,16).replace(/\D/g,'')+'.json',JSON.stringify({generated:new Date().toISOString(),labelRule:'skilled bot danger@3 mean: Easy <0.4, Medium 0.4-2, Hard >=2',levels:out},null,1))};
+/* ---------- visual pickers ---------- */
+let MP=null;
+function openModal(title,tabs,tab,render){MP={tabs,tab,render};$('mTitle').textContent=title;$('mSearch').value='';$('modal').hidden=false;drawModal();setTimeout(()=>$('mSearch').focus(),30)}
+function drawModal(){if(!MP)return;$('mTabs').innerHTML=MP.tabs.map(([k,l])=>`<button data-tab="${esc(k)}" class="${k===MP.tab?'on':''}">${esc(l)}</button>`).join('');MP.render(MP.tab,$('mSearch').value.trim().toLowerCase())}
+function closeModal(){$('modal').hidden=true;MP=null}
+$('mClose').onclick=closeModal;$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});$('mSearch').oninput=drawModal;
+$('mTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&MP){MP.tab=b.dataset.tab;drawModal()}});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&MP)closeModal()},true);
+function roomSug(){const out=[],rm=roomOf(S.bg),parts=rm.split(',').map(r=>r.trim().toLowerCase());const add=c=>{if(CAT[c]&&catSprites(c).length&&!out.includes(c))out.push(c)};[rm,...rm.split(',').map(r=>r.trim())].forEach(r=>(DATA.roomCats[r]||[]).forEach(add));CATS.forEach(c=>{if((c.rooms||[]).some(r=>parts.some(p=>r.toLowerCase().includes(p))))add(c.cat)});return out}
+function openCatPicker(cur,cb){const rooms=[...new Set(CATS.flatMap(c=>c.rooms||[]))].sort();const sug=roomSug();
+ const tabs=[['sug','Hay dùng ở map này ('+sug.length+')'],...rooms.map(r=>[r,r]),['all','Tất cả']];
+ openModal('Chọn category',tabs,sug.length?'sug':'all',(tab,q)=>{let list=tab==='sug'?sug.map(c=>CAT[c]):tab==='all'?CATS:CATS.filter(c=>(c.rooms||[]).includes(tab));
+  if(q)list=CATS.filter(c=>catName(c.cat).toLowerCase().includes(q)||(c.sprites||[]).some(x=>x.toLowerCase().includes(q)));
+  $('mGrid').className='mgrid';$('mGrid').innerHTML=list.map(c=>`<button class="ccard${c.cat===cur?' on':''}" data-c="${c.cat}"><div class="cstrip" style="background-position:${-(c.thx||0)*252}px ${-c.th*42}px;width:${42*Math.max(1,c.thn)}px;max-width:100%"></div><div class="nm">${esc(catName(c.cat))}</div><small>${catSprites(c.cat).length} sprite · ${esc((c.rooms||[]).join(', '))}</small> ${catFlag(c.cat)}</button>`).join('')||'<p class="hint">Không có category nào.</p>'});
+ $('mGrid').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;closeModal();cb(+b.dataset.c)}}
+function openBgPicker(cb){const bgs=Array.from({length:40},(_,i)=>'HT_BG_'+(i+1));const rooms=[...new Set(bgs.map(roomOf))];
+ openModal('Chọn map (ảnh nền)',[['all','Tất cả'],...rooms.map(r=>[r,r])],'all',(tab,q)=>{let list=bgs.filter(b=>tab==='all'||roomOf(b)===tab);if(q)list=bgs.filter(b=>(b+' '+roomOf(b)).toLowerCase().includes(q));
+  $('mGrid').className='mgrid bgs';$('mGrid').innerHTML=list.map(b=>`<button class="ccard bgcard${b===S.bg?' on':''}" data-b="${b}"><img loading="lazy" alt="" src="bgthumb/${b}.webp"><div class="nm">${b.replace('HT_BG_','Map ')}</div><small>${esc(roomOf(b))}</small></button>`).join('')});
+ $('mGrid').onclick=e=>{const b=e.target.closest('[data-b]');if(!b)return;closeModal();cb(b.dataset.b)}}
+function renderBgBtn(){$('bgBtn').innerHTML=`<img alt="" src="bgthumb/${S.bg}.webp"><span><b>${S.bg.replace('HT_BG_','Map ')}</b><br><small>${esc(roomOf(S.bg))}</small><br><small style="color:var(--acc)">Bấm để đổi map ▾</small></span>`}
+$('bgBtn').onclick=()=>openBgPicker(b=>{if(b===S.bg)return;commit();S.bg=b;syncInputs();changed()});
+const DIFF_T=[0,1,2,3];let GEN=null;
+/* ---------- difficulty curve: drag to set per-box level ---------- */
+const CV2=()=>$('curve');const CPAD={l:34,r:8,t:10,b:26};
+const CSSV={};function cssv(n){let e=CSSV._e;if(!e){e=CSSV._e=document.createElement('i');e.style.display='none';document.body.appendChild(e)}e.style.color=`var(${n})`;return getComputedStyle(e).color||'#888'}
+function drawCurve(){const c=CV2();if(!c)return;const w=c.clientWidth||360,h=190,dpr=devicePixelRatio||1;if(c.width!==Math.round(w*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr)}
+ const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);const B=S.boxes.length;if(!B){x.fillStyle=cssv('--mute');x.font='13px Nunito,sans-serif';x.fillText('Chưa có box',CPAD.l,h/2);return}
+ const pw=w-CPAD.l-CPAD.r,ph=h-CPAD.t-CPAD.b,bw=pw/B,Y=v=>CPAD.t+ph*(1-Math.min(v,3.6)/3.6);
+ x.font='11px Nunito,sans-serif';x.textAlign='right';x.textBaseline='middle';
+ ['E','N','H','SH'].forEach((t,k)=>{x.strokeStyle=cssv('--line');x.lineWidth=1;x.beginPath();x.moveTo(CPAD.l,Y(k));x.lineTo(w-CPAD.r,Y(k));x.stroke();x.fillStyle=cssv('--mute');x.fillText(t,CPAD.l-6,Y(k))});
+ // target bars
+ S.boxes.forEach((b,i)=>{const v=DIFF_T[b.diff]||0,x0=CPAD.l+i*bw+bw*0.15;x.fillStyle=['#d9d4e6','#b9abd9','#9378cc','#6440b0'][b.diff]||'#d9d4e6';x.globalAlpha=0.55;x.fillRect(x0,Y(v)-(v?0:2),bw*0.7,Math.max(2,Y(0)-Y(v)+(v?0:2)));x.globalAlpha=1});
+ const line=(arr,col,dash)=>{if(!arr)return;x.strokeStyle=col;x.lineWidth=2;x.setLineDash(dash||[]);x.beginPath();arr.forEach((v,i)=>{const px=CPAD.l+(i+0.5)*bw,py=Y(v);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.setLineDash([]);x.fillStyle=col;arr.forEach((v,i)=>{x.beginPath();x.arc(CPAD.l+(i+0.5)*bw,Y(v),2.2,0,7);x.fill()})};
+ if(SA&&SA.cost.length===B)line(SA.cost,'#e08a2b',[5,4]);
+ if(SK&&SK.cost.length===B)line(SK.cost,cssv('--acc'));
+ if(SA&&SA.lost.length===B)SA.lost.forEach((v,i)=>{if(v>=0.05){x.fillStyle=cssv('--hot');x.globalAlpha=Math.min(1,0.3+v*2);x.beginPath();x.arc(CPAD.l+(i+0.5)*bw,h-8,Math.min(6,2+v*12),0,7);x.fill();x.globalAlpha=1}});
+ x.fillStyle=cssv('--mute');x.textAlign='center';x.textBaseline='alphabetic';const stp=Math.ceil(B/12);for(let i=0;i<B;i+=stp)x.fillText(i+1,CPAD.l+(i+0.5)*bw,h-14)}
+let cDrag=null;
+function curveSet(e){const c=CV2(),r=c.getBoundingClientRect(),B=S.boxes.length;if(!B)return;const pw=r.width-CPAD.l-CPAD.r,ph=190-CPAD.t-CPAD.b;
+ const i=Math.floor((e.clientX-r.left-CPAD.l)/(pw/B));if(i<0||i>=B)return;const v=Math.max(0,Math.min(3,Math.round((1-(e.clientY-r.top-CPAD.t)/ph)*3.6)));
+ if(S.boxes[i].diff!==v){S.boxes[i].diff=v;cDrag.dirty=true;drawCurve()}}
+$('curve').addEventListener('pointerdown',e=>{const u0=UNDO.length;commit();cDrag={dirty:false,pushed:UNDO.length>u0};$('curve').setPointerCapture(e.pointerId);curveSet(e)});
+$('curve').addEventListener('pointermove',e=>{if(cDrag)curveSet(e);else{const c=CV2(),r=c.getBoundingClientRect(),B=S.boxes.length;if(!B)return;const i=Math.floor((e.clientX-r.left-CPAD.l)/((r.width-CPAD.l-CPAD.r)/B));const b=S.boxes[i];if(b)c.title=`Box ${i+1} · ${catName(b.cat)} · mức ${DIFF[b.diff]}${SK?` · bot giỏi ${SK.cost[i]?.toFixed(1)}`:''}${SA?` · bot TB ${SA.cost[i]?.toFixed(1)}, thua ${Math.round((SA.lost[i]||0)*100)}%`:''}`}});
+const cUp=()=>{if(!cDrag)return;const d=cDrag;cDrag=null;if(d.dirty){renderBoxes();renderDiff()}else if(d.pushed){UNDO.pop();updUndo()}};
+$('curve').addEventListener('pointerup',cUp);$('curve').addEventListener('pointercancel',cUp);
+new ResizeObserver(()=>drawCurve()).observe($('curve'));
+function genRun(){const n=S.items.length,B=S.boxes.length;if(!n||!B)return;if(S.forb.size){const fc=freeCells();let mv=0;for(const it of S.items)if(!it.lock&&itemInForb(it)){randPlace(it,fc);mv++}if(mv)commit()}const thr=S.thr/100,its=S.items,Gs=its.map(geo);
+ const ns=Gs.map(g=>g.pts.length/2),cnt=new Int32Array(n*n);
+ function cntPair(i,j){const gi=geo(its[i]),gj=geo(its[j]);if(Math.hypot(its[i].x-its[j].x,its[i].y-its[j].y)>gi.R+gj.R)return 0;const P=gi.pts;let c=0;for(let k=0;k<P.length;k+=2)if(inside(its[j],P[k],P[k+1]))c++;return c}
+ function rows(k){for(let j=0;j<n;j++){if(j===k)continue;cnt[k*n+j]=cntPair(k,j);cnt[j*n+k]=cntPair(j,k)}}
+ for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){cnt[i*n+j]=cntPair(i,j);cnt[j*n+i]=cntPair(j,i)}
+ let order=[...Array(n).keys()];const lockedPos=new Set(its.map((it,i)=>it.lock?i:-1).filter(i=>i>=0));
+ const tgt=S.boxes.map(b=>DIFF_T[b.diff]||0);const AR=apsRange();let bias=0,lastAps=null,nChk=0;
+ function buildC(){const above=[],below=[],pos=new Int32Array(n);order.forEach((it,p)=>pos[it]=p);for(let p=0;p<n;p++){above.push([]);below.push([])}
+  for(let p=0;p<n;p++){const a=order[p],need=Math.max(1,thr*ns[a]);if(!ns[a])continue;for(let q=p+1;q<n;q++){if(cnt[a*n+order[q]]>=need){above[p].push(q);below[q].push(p)}}}
+  const Wd=(n+31)>>5,cl=new Array(n);for(let i=n-1;i>=0;i--){const b=new Uint32Array(Wd);for(const j of above[i]){b[j>>5]|=1<<(j&31);for(let w=0;w<Wd;w++)b[w]|=cl[j][w]}cl[i]=b}
+  const cat=order.map(i=>SP[its[i].sid]?.cat??S.boxes[boxIdx(its[i].box)]?.cat??-1);return{above,below,cl,cat}}
+ const R=rng((Math.random()*1e9)|0);
+ function apsNow(N){const C=buildC();const Si=S.items;S.items=order.map(i=>its[i]);const v=runV2(C,N,lvNo());S.items=Si;return v.aps}
+ function evalS(runs){const C=buildC(),cost=new Float64Array(B);let lose=0;const Sitems=S.items;S.items=order.map(i=>its[i]);
+  for(let k=0;k<runs;k++){const g=new Game(C,R);let guard=0;while(g.st==='play'&&guard++<6000){const m=g.move();if(!m)break;g.pick(m.pick,m.attr)}if(g.st!=='win')lose++;for(let b=0;b<B;b++)cost[b]+=g.cost[b]}
+  S.items=Sitems;let e=0;for(let b=0;b<B;b++){const d=cost[b]/runs-Math.max(0,Math.min(4,tgt[b]+bias));e+=d*d}return{e:e+Math.max(25,4*B)*lose/runs,cost:[...cost].map(v=>v/runs),lose:lose/runs}}
+ const unl=[...Array(n).keys()].filter(i=>!its[i].lock);if(!unl.length){$('genRes').textContent='Tất cả item đều khoá, không có gì để xếp.';return}
+ let cur=evalS(12),best={e:cur.e,order:order.slice(),pos:its.map(it=>[it.x,it.y,it.a])};const N=Math.max(100,Math.min(20000,+$('genIt').value||1500));let it=0;const t0=performance.now();const chk=Math.max(150,Math.floor(N/10));
+ GEN={stop:false};$('genGo').textContent='■ Dừng';
+ function step(){const tEnd=performance.now()+40;while(it<N&&performance.now()<tEnd&&!GEN.stop){it++;const T=1.5*Math.pow(0.01,it/N);
+   const r=R();let undo;
+   if(r<0.55){// swap layers of two unlocked items, preferring an overlapping neighbour
+    const pa=order.indexOf(unl[Math.floor(R()*unl.length)]);if(lockedPos.has(pa))continue;const a=order[pa];const nb=[];for(let p=0;p<n;p++){const b=order[p];if(b!==a&&!lockedPos.has(p)&&(cnt[a*n+b]||cnt[b*n+a]))nb.push(p)}const pb=nb.length&&R()<0.85?nb[Math.floor(R()*nb.length)]:Math.floor(R()*n);if(pb===pa||lockedPos.has(pb))continue;
+    [order[pa],order[pb]]=[order[pb],order[pa]];undo=()=>{[order[pa],order[pb]]=[order[pb],order[pa]]}}
+   else{const k=unl[Math.floor(R()*unl.length)],o=its[k],old=[o.x,o.y,o.a];
+    if(R()<0.5){o.x=Math.round(o.x+(R()-0.5)*240);o.y=Math.round(o.y+(R()-0.5)*240)}else{const t=its[Math.floor(R()*n)];const d=geo(t).R*0.7*R(),an=R()*6.283;o.x=Math.round(t.x+d*Math.cos(an));o.y=Math.round(t.y+d*Math.sin(an))}
+    if(R()<0.3)o.a=Math.max(-45,Math.min(45,o.a+Math.round((R()-0.5)*30)));
+    if(itemOut(o)||itemInForb(o)){[o.x,o.y,o.a]=old;continue}
+    rows(k);undo=()=>{[o.x,o.y,o.a]=old;rows(k)}}
+   const nx=evalS(12);if(nx.e<=cur.e||R()<Math.exp((cur.e-nx.e)/T)){cur=nx;if(cur.e<best.e)best={e:cur.e,order:order.slice(),pos:its.map(it=>[it.x,it.y,it.a])}}else undo();
+   if(AR&&it%chk===0&&it<N*0.95){/* bot v2 check on the best layout so far; shift all box targets if APS is outside the range */
+    order=best.order.slice();its.forEach((o,i)=>[o.x,o.y,o.a]=best.pos[i]);for(let k=0;k<n;k++)rows(k);lastAps=apsNow(40);nChk++;
+    const old=bias;if(lastAps<AR[0])bias=Math.min(3,bias+0.35);else if(lastAps>AR[1])bias=Math.max(-3,bias-0.35);
+    cur=evalS(12);if(bias!==old)best={e:cur.e,order:order.slice(),pos:its.map(it=>[it.x,it.y,it.a])}}}
+  $('genRes').textContent=`Đang xếp… bước ${it}/${N} · sai lệch tốt nhất ${best.e.toFixed(2)}${AR&&lastAps!=null?` · APS bot v2 lần đo gần nhất ${lastAps.toFixed(2)} (mục tiêu ${AR[0]}–${AR[1]})${bias?` · mức box đang ${bias>0?'nâng':'hạ'} ${Math.abs(bias).toFixed(2)}`:''}`:''}`;
+  if(it<N&&!GEN.stop){setTimeout(step,0);return}
+  its.forEach((o,i)=>[o.x,o.y,o.a]=best.pos[i]);commit();S.items=best.order.map(i=>its[i]);GEN=null;$('genGo').textContent='Tự xếp';changed();
+  const sk=runSkilled(A,100);const off=S.boxes.map((b,i)=>[i,sk.cost[i]-tgt[i]]).filter(x=>Math.abs(x[1])>=0.75);const fv=AR?runV2(A,120,lvNo()):null;
+  $('genRes').innerHTML=`<b>Xong</b> sau ${it} bước (${((performance.now()-t0)/1000).toFixed(0)} s). Bot giỏi 100 lượt: thắng ${Math.round(sk.win*100)}%, nhãn ${sk.label}. `+(fv?`<b>APS bot v2: ${fv.aps.toFixed(2)} (${fv.band})</b> ${fv.aps>=AR[0]&&fv.aps<=AR[1]?'✓ trong khoảng mục tiêu':'✕ chưa vào khoảng '+AR[0]+'–'+AR[1]+', bấm Tự xếp thêm lần nữa hoặc tăng số lần thử'}${bias?` (tool đã ${bias>0?'nâng':'hạ'} đều mức box ${Math.abs(bias).toFixed(2)} so với cột tím)`:''}. `:'')+(off.length?`Box còn lệch mục tiêu: ${off.slice(0,8).map(([i,d])=>`box ${i+1} (${d>0?'+':''}${d.toFixed(1)})`).join(', ')}${off.length>8?'…':''}. Có thể bấm Tự xếp thêm lần nữa.`:'Mọi box đều sát mục tiêu.')}
+ step()}
+$('genAps').onchange=()=>{$('genApsC').hidden=$('genAps').value!=='custom'};
+function apsRange(){const v=$('genAps').value;if(!v)return null;if(v==='custom'){const a=+$('genA0').value,b=+$('genA1').value;return a>0&&b>a?[a,b]:null}return v.split(',').map(Number)}
+$('genGo').onclick=()=>{if(GEN){GEN.stop=true;return}if(!S.boxes.length)return;if($('genStart').value!=='keep'){commit();scatter($('genStart').value);changed()}$('genRes').textContent='Đang chuẩn bị…';setTimeout(genRun,20)};
+let pickFor=-1;
+function renderItems(){const bad=new Set(checkList().filter(x=>x.i!=null).map(x=>x.i));
+ $('lockCount').textContent=`Đang khoá ${S.items.filter(x=>x.lock).length}/${S.items.length} item.`;$('itemGroups').innerHTML=S.boxes.map((b,bi)=>{const its=S.items.map((it,i)=>[it,i]).filter(([it])=>it.box===b.id);return`<div class="group"><div class="gh"><span>Box ${bi+1} · ${esc(catName(b.cat))} · ${its.length}/${b.count}</span><span style="display:flex;gap:4px"><button data-lb="${b.id}" title="Khoá / mở khoá cả box">${its.length&&its.every(([it])=>it.lock)?'🔓 Mở cả box':'🔒 Khoá cả box'}</button><button data-rb="${b.id}">Random box này</button></span></div><div class="chips">${its.map(([it,i])=>`<button class="chip${it.lock?' locked':''}${i===sel?' sel':''}${bad.has(i)?' bad':''}" data-i="${i}" title="${esc(it.sid)} · ${it.lock?'ĐANG KHOÁ':'đang mở'}"><img alt="" src="${thumb(it.sid)}">${it.lock?'<span class="lk">🔒</span>':''}</button>`).join('')}</div>${its.some(([,i])=>i===sel)?picker(S.items[sel],b.cat):''}</div>`}).join('')+orphan()}
+function orphan(){const o=S.items.map((it,i)=>[it,i]).filter(([it])=>boxIdx(it.box)<0);return o.length?`<div class="group"><div class="gh bad">Item không thuộc box nào (${o.length})</div><div class="chips">${o.map(([it,i])=>`<button class="chip bad" data-i="${i}"><img alt="" src="${thumb(it.sid)}"></button>`).join('')}</div></div>`:''}
+function lockPill(it){return it.lock?'<span class="lockpill on">🔒 Đang khoá</span>':'<span class="lockpill off">🔓 Đang mở</span>'}
+function picker(it,cat){const used=new Set(S.items.map(x=>x.sid));return`<div class="row" style="align-items:center"><b>Item đang chọn:</b>${lockPill(it)}<button data-lock="1">${it.lock?'🔓 Mở khoá item này':'🔒 Khoá item này'}</button></div><p class="hint" style="margin:2px 0 6px">Đổi sprite (chọn tay sẽ tự khoá):</p><div class="picker">${catSprites(cat).map(id=>{const sp=DATA.spriteSpot[id];return`<button class="chip${id===it.sid?' sel':''}" data-sp="${esc(id)}" title="${esc(id)}${sp?' · nhìn ra '+sp.spot.toFixed(2):''}"><img alt="" src="${thumb(id)}">${used.has(id)&&id!==it.sid?'<small>đã dùng</small>':sp&&sp.spot<0.65?'<small style="color:var(--hot)">khó</small>':''}</button>`}).join('')}</div>`}
+$('itemGroups').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.i!=null){sel=+t.dataset.i;const it=S.items[sel];view.cx=it.x;view.cy=it.y;renderItems();renderSel();draw();return}
+ if(t.dataset.sp!=null&&sel>=0){commit();S.items[sel].sid=t.dataset.sp;S.items[sel].lock=true;changed();return}
+ if(t.dataset.lock&&sel>=0){act('lock');return}
+ if(t.dataset.lb!=null){const id=+t.dataset.lb;const its=S.items.filter(x=>x.box===id);const v=!(its.length&&its.every(x=>x.lock));commit();its.forEach(x=>x.lock=v);changed();return}
+ if(t.dataset.rb!=null){commit();rndSprites(+t.dataset.rb);changed()}});
+$('lockAll').onclick=()=>{commit();S.items.forEach(x=>x.lock=true);changed()};$('unlockAll').onclick=()=>{commit();S.items.forEach(x=>x.lock=false);changed()};
+function rndSprites(boxId){const used=new Set(S.items.filter(i=>i.lock||(boxId!=null&&i.box!==boxId)).map(i=>i.sid));for(const it of S.items){if(it.lock||(boxId!=null&&it.box!==boxId))continue;const b=S.boxes[boxIdx(it.box)];if(!b)continue;const s=randSprite(b.cat,used);if(s){it.sid=s;used.add(s)}}}
+$('rndAll').onclick=()=>{commit();rndSprites(null);changed()};
+function renderSel(){if(sel<0||!S.items[sel]){$('selBody').innerHTML='<p class="hint">Chưa chọn item. Bấm vào item trên board.</p>';return}const it=S.items[sel],s=SP[it.sid],sp=DATA.spriteSpot[it.sid];
+ $('selBody').innerHTML=`<div class="sel-info"><img alt="" src="${thumb(it.sid)}"><div><b>#${sel+1} ${esc(it.sid)}</b> ${lockPill(it)}<br>${esc(catName(s?.cat))} ${catFlag(s?.cat)}<br>Box ${boxIdx(it.box)+1} · lớp ${sel+1}/${S.items.length}${A?` · load ${A.load[sel]} · bị che ${Math.round(A.frac[sel]*100)}%`:''}${sp?`<br>Sprite nhìn ra ${sp.spot.toFixed(2)} (${sp.n} lần đo)`:''}</div></div>
+ <div class="form" style="margin-top:8px"><label>x<input data-f="x" type="number" value="${it.x}"></label><label>y<input data-f="y" type="number" value="${it.y}"></label><label>Góc (°)<input data-f="a" type="number" step="1" value="${it.a}"></label><label>Tỉ lệ<input data-f="sc" type="number" step="0.05" value="${Math.abs(it.sx)}"></label></div>
+ <div class="grid2" style="margin-top:8px"><button data-a="rot-">Xoay −5° (E)</button><button data-a="rot+">Xoay +5° (R)</button><button data-a="small">Nhỏ lại (−)</button><button data-a="big">To lên (+)</button><button data-a="flip">Lật (F)</button><button data-a="lock">${it.lock?'🔓 Mở khoá (L)':'🔒 Khoá (L)'}</button><button data-a="dup">Nhân bản (Ctrl+D)</button><button data-a="del" class="danger">Xoá (Del)</button><button data-a="top">Lên trên cùng</button><button data-a="up">Lên 1 lớp (PgUp)</button><button data-a="down">Xuống 1 lớp (PgDn)</button><button data-a="bottom">Xuống dưới cùng</button></div>
+ ${A&&A.above[sel].length?`<p class="hint">Bị che trực tiếp bởi: ${A.above[sel].map(j=>'#'+(j+1)+' '+esc(S.items[j].sid)).join(', ')}</p>`:'<p class="hint">Không bị item nào che.</p>'}`}
+$('selBody').addEventListener('click',e=>{const a=e.target.dataset.a;if(a)act(a)});
+$('selBody').addEventListener('change',e=>{const f=e.target.dataset.f;if(!f||sel<0)return;const it=S.items[sel];commit();const v=+e.target.value;if(f==='sc'){const k=v/Math.abs(it.sx);it.sx*=k;it.sy*=k}else it[f]=v;changed()});
+
+/* ---------- checks ---------- */
+function checkList(){const out=[],offF=[];if(!A)return out;const need={},have={};S.boxes.forEach(b=>need[b.cat]=(need[b.cat]||0)+b.count);
+ S.items.forEach((it,i)=>{const s=SP[it.sid];if(!s){out.push({i,t:'bad',m:`#${i+1} ${it.sid}: không có ảnh sprite trong thư viện (tool tạm tính theo category của box, không tính che)`});const bb=S.boxes[boxIdx(it.box)];if(bb)have[bb.cat]=(have[bb.cat]||0)+1;return}if(s.cat==null)out.push({i,t:'bad',m:`#${i+1} ${it.sid}: chưa có trong catalog của game, không xuất sang Unity được`});{const cc=s.cat??S.boxes[boxIdx(it.box)]?.cat;have[cc]=(have[cc]||0)+1}
+  const b=S.boxes[boxIdx(it.box)];if(!b)out.push({i,t:'bad',m:`#${i+1} ${it.sid}: không thuộc box nào`});else if(s.cat!=null&&b.cat!==s.cat)out.push({i,t:'bad',m:`#${i+1} ${it.sid}: category khác box ${boxIdx(it.box)+1}`});
+  if(itemOut(it))out.push({i,t:'bad',m:`#${i+1} ${it.sid}: ra ngoài map`});if(itemInForb(it))out.push({i,t:'bad',m:`#${i+1} ${it.sid}: nằm trong vùng cấm`});
+  if(A.frac[i]>=0.999)out.push({i,t:'warn',m:`#${i+1} ${it.sid}: bị che kín 100%`});
+  const[fw,fh]=S.frame;if(Math.abs(it.x)>fw/2||Math.abs(it.y)>fh/2)offF.push(i)});
+  if(offF.length)out.push({i:offF[0],t:'warn',m:`${offF.length} item có tâm nằm ngoài khung màn hình đầu (người chơi phải kéo ngang mới thấy): #${offF.slice(0,12).map(i=>i+1).join(', #')}${offF.length>12?'…':''}`});
+ for(const c of new Set([...Object.keys(need),...Object.keys(have)]))if((need[c]||0)!==(have[c]||0))out.unshift({t:'bad',m:`${catName(+c)}: box cần ${need[c]||0}, board có ${have[c]||0}`});
+ S.boxes.forEach((b,bi)=>{const n=S.items.filter(it=>it.box===b.id).length;if(n!==b.count)out.unshift({t:'bad',m:`Box ${bi+1}: cần ${b.count} item, đang có ${n}`})});
+ return out}
+function renderChecks(){const L=checkList();const nb=L.filter(x=>x.t==='bad').length,nw=L.length-nb;document.querySelector('[data-t=check]').textContent=`Kiểm tra${L.length?` (${nb}/${nw})`:' ✓'}`;
+ $('issues').innerHTML=L.length?L.map(x=>`<li class="${x.t==='warn'?'warn':''}" ${x.i!=null?`data-i="${x.i}"`:''}>${esc(x.m)}</li>`).join(''):'<li class="ok">Không có lỗi.</li>'}
+$('issues').addEventListener('click',e=>{const li=e.target.closest('li');if(!li||li.dataset.i==null)return;sel=+li.dataset.i;const it=S.items[sel];view.cx=it.x;view.cy=it.y;view.z=Math.max(view.z,0.5);renderSel();draw()});
+
+/* ---------- difficulty ---------- */
+function renderDiff(){drawCurve();const k=SK;if(!k||!A)return;$('v2t').innerHTML=V2?'<table class="tbl"><thead><tr><th>Nhóm</th><th>Tỉ trọng</th><th>Thắng không trợ giúp</th><th>Xác suất trợ giúp khi nguy</th><th>Thắng có booster</th><th>Trợ giúp/ván</th></tr></thead><tbody>'+V2.per.map(p=>`<tr><td>${p.name}</td><td>${Math.round(p.share*100)}%</td><td>${Math.round(p.nohelp*100)}%</td><td>${Math.round(p.pr*100)}%</td><td><b>${Math.round(p.win*100)}%</b></td><td>${p.helps.toFixed(2)}</td></tr>`).join('')+`</tbody></table><p class="hint">${V2.N} ván mỗi nhóm mỗi lượt. Mức dùng booster của level = ${V2.lf.toFixed(2)} × mức gốc. Booster: Vacuum 43% (hút box gần đầy nhất, lớp trên trước), Bloom 26%, thêm box 20%, thêm ô 11%; đầy 5 ô thì revive cùng xác suất; tối đa 6 lần/ván.</p>`:'';$('kpis').innerHTML=[[`<span class="v">${k.label}</span>`,`Nhãn bot giỏi: chạm 3 slot TB ${k.d3.toFixed(2)} lần / 100 lượt`,'main'],...(V2?[[`<span class="v">${V2.aps.toFixed(2)}</span> <small>${V2.band}</small>`,`APS ước tính (bot v2, level ${V2.L}): số lần chơi TB để thắng`,'main'],[`<span class="v">${Math.round(V2.win*100)}%</span>`,`Thắng có booster (bot v2) · ${V2.helps.toFixed(1)} lần trợ giúp/ván`,'main'],[`<span class="v">${Math.round(V2.nohelp*100)}%</span>`,'Thắng không trợ giúp (bot v2)']]:[['<span class="v">…</span>','Đang chạy bot v2…','main']]),...(SA?[[`<span class="v ${SA.win<0.5?'bad':''}">${Math.round(SA.win*100)}%</span>`,'Bot TB 1 nhóm, không trợ giúp (dùng cho curve)']]:[]),[`<span class="v ${k.win<0.9?'bad':''}">${Math.round(k.win*100)}%</span>`,'Bot giỏi thắng'],[`<span class="v">${k.peak.toFixed(1)}</span>`,'Đỉnh hàng chờ TB'],[`<span class="v">${A.layers}</span>`,'Số lớp'],[`<span class="v">${A.above.filter(a=>a.length).length}/${S.items.length}</span>`,'Item bị che lúc đầu']].map(([v,l,c])=>`<div class="k ${c||''}">${v}<div class="l">${l}</div></div>`).join('');
+ const d=$('dLabel').value;const ord=x=>LBL.indexOf(x);$('cmp').innerHTML=!d?'Chơi thử rồi chọn nhãn designer để so với nhãn bot.':ord(d)===ord(k.label)?'<b class="good">Khớp với nhãn bot giỏi.</b>':`<b class="bad">Lệch ${Math.abs(ord(d)-ord(k.label))} bậc: designer thấy ${ord(d)>ord(k.label)?'khó':'dễ'} hơn bot giỏi.</b>`;
+ $('btbl').innerHTML='<thead><tr><th>Box</th><th>Category</th><th>Item</th><th>Mức muốn</th><th>Mục tiêu</th><th>Vào hàng chờ TB (bot giỏi)</th><th>Chạm 3 TB</th><th>Bot giỏi thua ở box</th><th>Bot TB thua ở box</th></tr></thead><tbody>'+S.boxes.map((b,i)=>`<tr><td>${i+1}</td><td>${esc(catName(b.cat))}</td><td>${b.count}</td><td>${DIFF[b.diff]}</td><td>${DIFF_T[b.diff]}</td><td class="${Math.abs((k.cost[i]??0)-DIFF_T[b.diff])>=0.75?'bad':''}">${k.cost[i]?.toFixed(2)??'–'}</td><td>${k.d3b[i]?.toFixed(2)??'–'}</td><td>${k.lost[i]?Math.round(k.lost[i]*100)+'%':''}</td><td>${SA&&SA.lost[i]?Math.round(SA.lost[i]*100)+'%':''}</td></tr>`).join('')+'</tbody>'}
+$('dLabel').onchange=()=>{S.dLabel=$('dLabel').value;renderDiff()};$('intent').onchange=()=>{S.intent=$('intent').value};
+
+/* ---------- play ---------- */
+function renderPlay(){const on=mode==='play';$('ovTop').hidden=!on;$('ovBot').hidden=!on;$('playTools').hidden=!on;if(!on||!G)return;
+ $('ovTop').innerHTML=G.slots.map(b=>b<0?'<div class="bx"><small>Hết box</small></div>':`<div class="bx"><img alt="" src="${thumb(catSprites(S.boxes[b].cat)[0])}"><div><b>Box ${b+1}</b> ${G.fill[b]}/${S.boxes[b].count}<br><small>${esc(catName(S.boxes[b].cat))}</small></div></div>`).join('')+`<div class="pill ${G.st}">${G.st==='win'?'Thắng':G.st==='lose'?'Thua':'Còn '+(S.boxes.length-G.next)+' box ẩn'}</div>`;
+ $('ovBot').className='overlay bot'+(G.q.length>=3?' warn':'');$('ovBot').innerHTML=Array.from({length:QMAX},(_,k)=>{const i=G.q[k];return`<div class="slot${i!=null?' full':''}">${i!=null?`<img alt="" src="${thumb(S.items[i].sid)}">`:''}</div>`}).join('')+`<div class="pill">Tap ${G.taps}</div>`}
+$('reset').onclick=()=>{stopAuto();rpOff();G=new Game(A);ghist=[];renderPlay();draw()};
+$('pundo').onclick=()=>{const s=ghist.pop();if(s){Object.assign(G,s);renderPlay();draw()}};
+const PR=rng(Date.now()&0xffff);function botMove(){return $('pbot').value==='avg'?avgMove(G,PR):G.move()}
+function stopAuto(){if(AUTO){clearInterval(AUTO);AUTO=null}$('autoPlay').textContent='▶ Chơi hết màn'}
+$('autoPlay').onclick=()=>{rpOff();if(AUTO){stopAuto();return}if(!G||G.st!=='play'){G=new Game(A);ghist=[]}$('autoPlay').textContent='■ Dừng';AUTO=setInterval(()=>{if(mode!=='play'||!G||G.st!=='play'){stopAuto();renderPlay();draw();return}$('bot1').onclick()},140)};
+$('rGo').onclick=()=>{if(!A)return;const N=Math.max(10,Math.min(5000,+$('rN').value||500)),kind=$('rBot').value;$('rRes').textContent='Đang chạy…';setTimeout(()=>{const t=performance.now();const R=runBot(A,N,kind,(Math.random()*1e9)|0);const nm=kind==='avg'?'Bot trung bình':'Bot giỏi';
+ const lost=R.lost.map((v,i)=>[v,i]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]).slice(0,5).map(([v,i])=>`box ${i+1} (${Math.round(v*100)}%)`).join(', ');
+ $('rRes').innerHTML=`<b>${nm}, ${N} lượt:</b> thắng <b>${Math.round(R.win*100)}%</b> · hàng chờ chạm 3 slot TB ${R.d3.toFixed(2)} lần${kind==='skilled'?' (nhãn '+R.label+')':''} · đỉnh hàng chờ TB ${R.peak.toFixed(1)} · ${R.taps.toFixed(0)} tap/lượt<br>Đỉnh hàng chờ từng lượt: ${R.qmax.map((v,q)=>v?`${q} slot ${Math.round(v*100)}%`:'').filter(Boolean).join(' · ')}<br>${lost?'Thua nhiều nhất ở: '+lost:'Không thua lượt nào.'} <span style="opacity:.6">(${Math.round(performance.now()-t)} ms)</span>`},30)};
+/* replay: record one bot game, then scrub tap by tap */
+let RP=null;
+function rpShow(k){if(!RP)return;k=Math.max(0,Math.min(RP.f.length,k));RP.k=k;$('rpS').value=k;const fr=RP.f[Math.min(k,RP.f.length-1)];Object.assign(G,structuredClone(k<RP.f.length?fr.s:RP.end));G.flash=k<RP.f.length?new Set([fr.m.pick,...(fr.m.target!=null&&fr.m.target!==fr.m.pick?[fr.m.target]:[])]):null;
+ $('rpTxt').hidden=false;$('rpTxt').textContent=k<RP.f.length?`${RP.who} · tap ${k+1}/${RP.f.length}: ${fr.d}`:`${RP.who} · hết: ${RP.end.st==='win'?'THẮNG':'THUA'} sau ${RP.f.length} tap, hàng chờ cao nhất ${RP.end.peak}`;renderPlay();draw()}
+$('rpRec').onclick=()=>{stopAuto();const kind=$('pbot').value,who=kind==='avg'?'Bot trung bình':'Bot giỏi';const g=new Game(A,PR);const f=[];let guard=0;
+ while(g.st==='play'&&guard++<6000){const m=kind==='avg'?avgMove(g,PR):g.move();if(!m)break;const it=S.items[m.pick],c=A.cat[m.pick],b=g.match(c);
+  let d=`${it.sid} (${catName(c)})`;if(b>=0)d+=` → vào box ${b+1}`;else{const why=kind==='avg'?(m.kind==='dig'?`đào để lấy ${S.items[m.target]?.sid||''}`:m.kind==='random'?'bấm bừa (không thấy món cần)':'bấm nhầm'):(m.target!==m.pick?`đào để lấy ${S.items[m.target]?.sid||''}`:'');d+=` → vào hàng chờ (${g.q.length+1}/${QMAX})${why?' · '+why:''}`}
+  f.push({s:g.snap(),m,d});g.pick(m.pick,m.attr)}
+ RP={f,end:g.snap(),who,k:0};$('rpS').max=f.length;$('rpBox').hidden=false;rpShow(0)};
+$('rpS').oninput=()=>rpShow(+$('rpS').value);$('rpPrev').onclick=()=>rpShow(RP?RP.k-1:0);$('rpNext').onclick=()=>rpShow(RP?RP.k+1:0);
+function rpOff(){RP=null;$('rpBox').hidden=true;$('rpTxt').hidden=true}
+$('bot1').onclick=()=>{const m=botMove();if(!m)return;ghist.push(G.snap());G.pick(m.pick,m.attr);G.flash=new Set([m.target]);setTimeout(()=>{if(G)G.flash=null;draw()},600);renderPlay();draw()};
+
+/* ---------- modes & tabs ---------- */
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>{rpOff();stopAuto();mode=b.dataset.m;document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('on',x===b));if(A){G=new Game(A);ghist=[]}hover=-1;renderPlay();draw();status(mode==='paint'?'Bấm hoặc kéo để tô / xoá ô cấm.':mode==='play'?'Bấm item để nhặt. Kéo chỗ trống để di chuyển màn hình.':'')});
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!=='t-'+b.dataset.t)});
+
+/* ---------- setup inputs ---------- */
+function syncInputs(){$('bgSel').value=S.bg;renderBgBtn();$('lvName').value=S.name||'';$('thr').value=S.thr;$('cell').value=S.cell;$('frame').value=S.frame.join('x');$('dLabel').value=S.dLabel||'';$('intent').value=S.intent||'';$('lvNo').value=S.lvNo||''}
+$('bgSel').onchange=()=>{commit();S.bg=$('bgSel').value;renderBgBtn();changed()};
+$('lvName').onchange=()=>{S.name=$('lvName').value;if(!S.lvNo)changed()};
+$('lvNo').onchange=()=>{S.lvNo=+$('lvNo').value||0;changed()};
+$('thr').onchange=()=>{commit();S.thr=Math.max(0.1,+$('thr').value||1);changed()};
+$('cell').onchange=()=>{commit();S.cell=Math.max(20,+$('cell').value||80);S.forb.clear();changed()};
+$('frame').onchange=()=>{const m=$('frame').value.match(/(\d+)\D+(\d+)/);if(m){S.frame=[+m[1],+m[2]];changed()}};
+
+/* ---------- export / import (Unity level format) ---------- */
+const bgName=n=>'HT_BG_'+String(parseInt(n.replace(/\D/g,''),10)).padStart(2,'0');
+function toUnity(){return{bgPosX:0,bg:bgName(S.bg),levelName:S.name||'',order:S.boxes.map(b=>({type:b.cat,count:b.count,box:b.id,diff:b.diff})),content:S.items.map(it=>({id:it.sid,x:it.x,y:it.y,scaleX:it.sx,scaleY:it.sy,angle:it.a,box:it.box})),editorMeta:{designerLabel:S.dLabel||null,intent:S.intent||'',botLabel:SK?SK.label:null,botDanger3:SK?+SK.d3.toFixed(2):null,coverThresholdPct:S.thr,forbiddenCell:S.cell,forbidden:[...S.forb],frame:S.frame,locked:S.items.map((it,i)=>it.lock?i:-1).filter(i=>i>=0)}}}
+function parseLevel(o){if(!o||!Array.isArray(o.order)||!Array.isArray(o.content))throw new Error('thiếu order hoặc content');const m=o.editorMeta||{};const lk=new Set(m.locked||[]);
+ return{bg:'HT_BG_'+parseInt(String(o.bg||'1').replace(/\D/g,''),10),name:String(o.levelName??''),boxes:o.order.map(b=>({id:+b.box,cat:+b.type,count:+b.count,diff:+b.diff||0})),items:o.content.map((c,i)=>({uid:uid++,sid:String(c.id),box:+c.box,x:+c.x,y:+c.y,sx:+(c.scaleX??1),sy:+(c.scaleY??1),a:+(c.angle||0),lock:lk.has(i)})),forb:new Set(m.forbidden||[]),cell:+m.forbiddenCell||80,thr:+m.coverThresholdPct||1,frame:m.frame||S.frame,dLabel:m.designerLabel||'',intent:m.intent||''};
+ }
+function fromUnity(o){S=parseLevel(o);bid=Math.max(1,...S.boxes.map(b=>b.id))+1;syncInputs()}
+$('exp').onclick=()=>{$('json').value=JSON.stringify(toUnity(),null,1);$('json').select();$('jmsg').textContent='JSON hiện tại ở ô bên dưới, có thể copy.'};
+$('imp').onclick=()=>{try{const o=JSON.parse($('json').value);commit();fromUnity(o);sel=-1;changed();fit();$('jmsg').textContent=`Đã nhập ${o.order.length} box, ${o.content.length} item.`}catch(e){$('jmsg').textContent='Không nhập được: '+e.message}};
+$('openReal').onclick=async()=>{const f=$('realSel').value;try{const o=await(await fetch('levels/'+f+'.json')).json();commit();fromUnity(o);sel=-1;changed();fit();$('jmsg').textContent=`Đã mở ${f}: ${o.order.length} box, ${o.content.length} item.`}catch(e){$('jmsg').textContent='Không mở được: '+e.message}};
+$('newLv').onclick=()=>openBgPicker(b=>{commit();S={...S,bg:b,boxes:[],items:[],forb:new Set(),name:'Level mới',dLabel:'',intent:''};syncInputs();changed();fit();curLib=null;document.querySelector('#tabs [data-t=setup]').click();$('jmsg').textContent='Đã tạo level mới trên '+b+'. Thêm box ở tab Thiết lập.'});
+/* library + file save */
+const LS=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},LSset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+let curLib=null,DB=null,LIB=[];
+/* library: shared artifact db (collection "levels") when available, else this browser's storage */
+async function libInit(){try{const c=window.claude&&await window.claude.use('db');if(c){DB=c;const to=setTimeout(()=>{if(!LIB.length)renderLib()},10000);DB.collection('levels').onSnapshot(sn=>{clearTimeout(to);LIB=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.t-a.t);renderLib()},()=>{DB=null;LIB=LS('ht_ed_lib')||[];renderLib()});return}}catch(e){}LIB=LS('ht_ed_lib')||[];renderLib()}
+function renderLib(){$('libWhere').textContent=DB?'(lưu trên tool, mở ở máy nào cũng thấy)':'(chỉ trong trình duyệt này)';$('lib').innerHTML=LIB.length?LIB.map((x,i)=>`<li><span><b>${esc(x.name||'(chưa đặt tên)')}</b><br><small>${esc(x.bg)} · ${x.boxes} box · ${x.items} item · ${new Date(x.t).toLocaleString('vi-VN')}${x.label?' · bot: '+esc(x.label):''}</small></span><button data-o="${i}">Mở</button><button data-d="${i}" class="danger">Xoá</button></li>`).join(''):'<p class="hint">Chưa lưu level nào.</p>'}
+$('libSave').onclick=async()=>{const name=S.name||'Level '+(LIB.length+1);const same=LIB.find(x=>x.name===name);const id=same?same.id:('l'+Date.now());const rec={name,bg:S.bg,boxes:S.boxes.length,items:S.items.length,label:SK?SK.label:'',t:Date.now(),json:JSON.stringify(toUnity())};
+ $('jmsg').textContent='Đang lưu…';
+ if(DB){try{await DB.doc('levels/'+id).set(rec);curLib=id;$('jmsg').textContent=`Đã lưu "${name}" vào thư viện${same?' (ghi đè bản cùng tên)':''}.`}catch(e){$('jmsg').textContent='Không lưu được ('+(e.code||e.message)+'). Hãy dùng "Tải file về máy".'}return}
+ const L=LS('ht_ed_lib')||[];const k=L.findIndex(x=>x.id===id);if(k>=0)L[k]={id,...rec};else L.unshift({id,...rec});LIB=L;curLib=id;$('jmsg').textContent=LSset('ht_ed_lib',L)?`Đã lưu "${name}" trong trình duyệt này${same?' (ghi đè bản cùng tên)':''}.`:'Trình duyệt không cho lưu. Hãy dùng "Tải file về máy".';renderLib()};
+$('lib').addEventListener('click',async e=>{const o=e.target.dataset.o,d=e.target.dataset.d;if(o!=null){const r=LIB[+o];try{commit();fromUnity(r.json?JSON.parse(r.json):r.data);S.name=r.name;curLib=r.id;sel=-1;syncInputs();changed();fit();$('jmsg').textContent=`Đã mở "${r.name}".`}catch(err){$('jmsg').textContent='Không mở được: '+err.message}}
+ if(d!=null){const r=LIB[+d];if(DB){try{await DB.doc('levels/'+r.id).delete()}catch(err){$('jmsg').textContent='Không xoá được ('+(err.code||err.message)+').'}}else{LIB.splice(+d,1);LSset('ht_ed_lib',LIB);renderLib()}}});
+$('dl').onclick=async()=>{const json=JSON.stringify(toUnity(),null,1);const fn=('level_'+(S.name||'moi')).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^\w\-]+/g,'_')+'.json';
+ let dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch(e){}
+ if(dl){try{await dl.save({filename:fn,data:json});$('jmsg').textContent='Đã tải file '+fn+'. File này đúng định dạng level Unity.'}catch(e){$('jmsg').textContent=e&&e.code==='declined'?'Đã huỷ tải file.':'Không tải được file ('+(e&&e.code||'lỗi')+'). Có thể mở "Dán / copy JSON bằng tay" để copy.'}return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);$('jmsg').textContent='Đã tải file '+fn+'.'};
+$('upBtn').onclick=()=>$('upFile').click();
+$('upFile').onchange=async()=>{const f=$('upFile').files[0];if(!f)return;try{const o=JSON.parse(await f.text());commit();fromUnity(o);if(!S.name)S.name=f.name.replace(/\.json$/i,'');curLib=null;sel=-1;syncInputs();changed();fit();$('jmsg').textContent=`Đã mở file ${f.name}: ${o.order.length} box, ${o.content.length} item.`}catch(e){$('jmsg').textContent='Không mở được file: '+e.message}$('upFile').value=''};
+let draftT=null;function saveDraft(){clearTimeout(draftT);draftT=setTimeout(()=>{try{LSset('ht_ed_draft',{name:S.name,data:toUnity()})}catch(e){}},800)}
+
+window.__ed={runV2,get V2(){return V2},get S(){return S},get A(){return A},get SK(){return SK},analyze,runSkilled,runBot,checkList,toUnity,fromUnity,changed,commit,syncItems,scatter};
+/* ---------- boot ---------- */
+(async()=>{try{DATA=await(await fetch('data/catalog.json')).json()}catch(e){$('loading').textContent='Không tải được dữ liệu: '+e.message;return}
+ DATA.sprites.forEach(s=>SP[s.id]=s);for(let k=1;k<=60;k++){const L=SP['Long_sleeve_shirt_'+k],Sh=SP['Short_sleeve_shirt_'+k];if(L&&!SP['Long_sleeved_Shirt_'+k])SP['Long_sleeved_Shirt_'+k]=L;if(Sh){if(!SP['Short_sleevedShirt_'+k])SP['Short_sleevedShirt_'+k]=Sh;if(!SP['Short_sleevShirt_'+k])SP['Short_sleevShirt_'+k]=Sh}}/* renamed in art library, same image (Chi 26/11) */DATA.cats.forEach(c=>CAT[c.cat]=c);CATS=DATA.cats.filter(c=>catSprites(c.cat).length);
+ const bgs=[...new Set(Array.from({length:40},(_,i)=>'HT_BG_'+(i+1)))];$('bgSel').innerHTML=bgs.map(b=>`<option value="${b}">${b} · ${esc(roomOf(b))}</option>`).join('');
+ $('realSel').innerHTML=DATA.levelFiles.map(f=>{const n=parseInt(f.slice(6),10);const l=DATA.levels.find(x=>x.level===n);return`<option value="${f}">${f.replace('level_','Level ')}${l?' · '+esc(l.room)+' · '+esc(l.label):''}</option>`}).join('');
+ new ResizeObserver(resize).observe($('cbox'));resize();
+ // start from real level 5 so the editor opens with real content
+ const dr=LS('ht_ed_draft');let fromDraft=false;if(dr&&dr.data){try{fromUnity(dr.data);S.name=dr.name||S.name;fromDraft=true}catch(e){}}
+ if(!fromDraft){try{const o=await(await fetch('levels/level_5.json')).json();fromUnity(o);S.name='Bản sao level 5'}catch(e){}}
+ libInit();syncInputs();if(fromDraft)setTimeout(()=>status('Đã mở lại bản đang làm dở lần trước.'),300);
+ $('loading').remove();changed();fit();updUndo();
+ // preload atlases used, then refresh thumbnails
+ await Promise.all([...new Set(S.items.map(it=>SP[it.sid]?.atlas).filter(Boolean))].map(a=>img(a).then(i=>IMGD[a]=i).catch(()=>{})));renderBoxes();renderItems();renderSel();draw()})();
+}
+</script>
+
+</body></html>

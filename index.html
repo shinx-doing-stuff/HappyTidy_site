@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+</head><body style="margin:0">
+<title>Happy Tidy level tools</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE work tool hub for a game designer and their team, same family as the two tools
+   IDEA the level pipeline itself: a route of stations from empty map to Unity file
+   PICTURE the route drawn large with the two tools as the stations it passes through, plus real screenshots
+   COLOUR white, ink, the tools' blue #1d5d8a leading, tomato for hard, green for easy (APS bands)
+   TYPE Nunito 900 display + Nunito
+   LAYOUT title over the full-width route; two tool cards side by side under it; stacked on phone */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#14161a);--ink:light-dark(#1b1d22,#eceae4);--mute:light-dark(#5b626e,#a3a9b3);--line:light-dark(#dde0e5,#2f343c);--panel:light-dark(#f4f6f7,#1c1f25);--acc:light-dark(#1d5d8a,#7cb8e6);--accbg:light-dark(#e6eff6,#15263a);--hot:light-dark(#d23f29,#ff6b55);--ok:light-dark(#2b8a55,#5cc98d);--warn:light-dark(#b8740a,#f0b44c)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Nunito,system-ui,sans-serif;overflow-x:clip}
+.band{padding-block:clamp(24px,3.5vw,52px);padding-left:max(5vw,16px,env(safe-area-inset-left,0px));padding-right:max(5vw,16px,env(safe-area-inset-right,0px))}
+.in{max-width:1240px;margin:0 auto}
+h1{font-size:clamp(34px,5vw,52px);line-height:1.05;letter-spacing:-.02em;font-weight:900;margin:0}
+h2{font-size:26px;line-height:1.15;margin:0 0 8px;font-weight:900;letter-spacing:-.01em}
+h3{font-size:18px;margin:0 0 4px;font-weight:800}
+p{margin:6px 0}
+.lead{font-size:17px;color:var(--mute);max-width:64ch;margin-top:10px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end}
+.go{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:10px 18px;border-radius:12px;font-weight:800;text-decoration:none;border:2px solid var(--acc);color:var(--acc);background:var(--bg);white-space:nowrap}
+.btn.pri{background:var(--acc);color:var(--bg)}
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+.route{position:relative;margin-top:26px;background:var(--accbg);border-radius:18px;padding:22px 18px 18px}
+.stops{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;position:relative;list-style:none;margin:0;padding:0}
+.stops::before{content:"";position:absolute;left:10%;right:10%;top:27px;height:6px;border-radius:3px;background:var(--acc);opacity:.35}
+.stop{position:relative;text-align:center;padding:0 4px}
+.dot{width:60px;height:60px;border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;background:var(--bg);border:5px solid var(--acc);font-weight:900;font-size:22px;color:var(--acc);position:relative}
+.stop.t2 .dot{border-color:var(--ok);color:var(--ok)}
+.stop b{display:block;font-size:16px;line-height:1.2}
+.stop small{display:block;color:var(--mute);font-size:14px;line-height:1.35;margin-top:4px}
+.tool{font-size:13px;font-weight:800;display:inline-block;justify-self:start;margin-top:6px;padding:2px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--line)}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px}
+.card{border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;background:var(--bg)}
+.shot{aspect-ratio:16/9;background:var(--panel);border-bottom:1px solid var(--line);overflow:hidden}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:top left;display:block}
+.shot.pt{display:grid;place-items:center;padding:18px}
+.cb{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
+.cb ul{margin:4px 0 10px;padding-left:20px}
+.cb li{margin:3px 0}
+.cb .btn{align-self:flex-start;margin-top:auto}
+.mock{width:100%;max-width:420px;display:grid;gap:10px}
+.mrow{display:flex;gap:8px}
+.mbox{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-weight:800;font-size:14px}
+.mbox small{display:block;color:var(--mute);font-weight:600}
+.mq{display:flex;gap:6px;justify-content:center}
+.mq i{width:44px;height:44px;border-radius:9px;border:2px dashed var(--line);background:var(--bg)}
+.mq i.f{border:2px solid var(--warn);background:color-mix(in srgb,var(--warn) 18%,var(--bg))}
+.mscore{display:flex;height:12px;border-radius:4px;overflow:hidden}
+.mscore span{display:block;height:100%}
+.grid2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:start}
+.ruler{display:grid;grid-template-columns:1.3fr .45fr .75fr 1.5fr;border-radius:10px;overflow:hidden;margin:10px 0 6px}
+.ruler div{padding:10px 8px;font-weight:800;color:#fff;font-size:15px}
+.ruler small{display:block;font-weight:600;opacity:.9;font-size:13px}
+.r1{background:#2b8a55}.r2{background:#1d5d8a}.r3{background:#b8740a}.r4{background:#d23f29}
+.steps{margin:6px 0;padding-left:22px}
+.steps li{margin:6px 0}
+.fig{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+.fig img{display:block;width:100%}
+.note{font-size:14px;color:var(--mute)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:13px;color:var(--mute);font-weight:800}
+td.n{white-space:nowrap;font-variant-numeric:tabular-nums}
+footer{border-top:1px solid var(--line);color:var(--mute);font-size:14px}
+@media(max-width:860px){.cards,.grid2{grid-template-columns:minmax(0,1fr)}.top{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.stops{grid-template-columns:minmax(0,1fr);gap:14px}.stops::before{left:29px;right:auto;top:20px;bottom:20px;width:6px;height:auto}.stop{display:grid;grid-template-columns:60px minmax(0,1fr);gap:12px;text-align:left;align-items:center}.dot{margin:0}.ruler div{font-size:13px;padding:8px 5px}table{font-size:13px}}
+</style>
+
+<section class="band">
+ <div class="in">
+  <div class="top">
+   <div>
+    <h1>Happy Tidy level tools</h1>
+    <p class="lead">Hai tool cho level designer: tạo level với đồ thật trên map thật, rồi đo độ khó bằng bot học từ log người chơi và bằng người chơi thử.</p>
+   </div>
+   <div class="go">
+    <a class="btn pri" href="editor.html">Mở tool tạo level</a>
+    <a class="btn" href="playtest.html">Mở tool test độ khó</a>
+    <a class="btn" href="guide.html">Hướng dẫn sử dụng</a>
+   </div>
+  </div>
+
+  <div class="route" aria-label="Quy trình làm một level">
+   <ol class="stops">
+    <li class="stop"><div class="dot">1</div><div><b>Dựng khung</b><small>Chọn map, tô vùng cấm, thêm box theo category</small><span class="tool">Tạo level</span></div></li>
+    <li class="stop"><div class="dot">2</div><div><b>Tự xếp</b><small>Đặt mức từng box và APS mục tiêu, tool tự dời đồ</small><span class="tool">Tạo level</span></div></li>
+    <li class="stop"><div class="dot">3</div><div><b>Xếp chuỗi</b><small>Ghép nhiều level, xem đường APS cả đoạn</small><span class="tool">Tạo level</span></div></li>
+    <li class="stop t2"><div class="dot">4</div><div><b>Người chơi thử</b><small>Mỗi người 5 ván, chấm điểm suýt thua</small><span class="tool">Test độ khó</span></div></li>
+    <li class="stop"><div class="dot">5</div><div><b>Xuất Unity</b><small>Tải file JSON đúng định dạng game</small><span class="tool">Tạo level</span></div></li>
+   </ol>
+  </div>
+
+  <div class="cards">
+   <article class="card">
+    <div class="shot"><img src="editor.webp" alt="Tool tạo level: map phòng bếp đầy đồ, bên phải là bảng độ khó với APS ước tính 1,70"></div>
+    <div class="cb">
+     <h3>Tool tạo level</h3>
+     <p>Editor dùng sprite và nền thật của game, tính che phủ theo hình từng món.</p>
+     <ul>
+      <li>Thêm nhiều box một lần, đồ tự chia đều; khoá món muốn giữ chỗ</li>
+      <li>Tự xếp: bot giỏi chấm từng box, bot v2 giữ APS cả level trong khoảng chọn</li>
+      <li>4 mẫu bố cục: rải đều, chồng cao, gom cụm, dồn giữa</li>
+      <li>Phòng test bot cho nhiều level, chuỗi level với đường APS, xuất CSV / JSON</li>
+     </ul>
+     <a class="btn pri" href="editor.html">Mở tool tạo level</a>
+    </div>
+   </article>
+   <article class="card">
+    <div class="shot pt" aria-hidden="true">
+     <div class="mock">
+      <div class="mrow"><div class="mbox">2/4<small>Kitchen ware</small></div><div class="mbox">0/3<small>Spices</small></div></div>
+      <div class="mq"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></div>
+      <div class="mscore"><span style="width:22%;background:#2b8a55"></span><span style="width:30%;background:#1d5d8a"></span><span style="width:18%;background:#7cb8e6"></span><span style="width:8%;background:#b8740a"></span><span style="width:22%;background:#c9ced6"></span></div>
+     </div>
+    </div>
+    <div class="cb">
+     <h3>Tool test độ khó</h3>
+     <p>Người test chơi level ngay trên trình duyệt, không cần cài game.</p>
+     <ul>
+      <li>Chơi thử: không booster, được Revive 2 lần, mỗi level 5 ván</li>
+      <li>Điểm suýt thua và đánh giá “khó tốt / dễ tốt” cho từng level</li>
+      <li>Bot v2 chơi cùng luật để so với người</li>
+      <li>Designer quản lý danh sách level, tải kết quả CSV</li>
+     </ul>
+     <a class="btn" href="playtest.html">Mở tool test độ khó</a>
+    </div>
+   </article>
+  </div>
+ </div>
+</section>
+
+<section class="band" style="background:var(--panel)">
+ <div class="in grid2">
+  <div>
+   <h2>Độ khó đo bằng APS</h2>
+   <p>APS là số lần chơi trung bình để thắng 1 lần. Bot v2 gồm 6 nhóm người chơi học từ log thật (3 mức độ chính xác × hay hoặc ít dùng booster), chơi mỗi level 2 lượt: không trợ giúp, rồi có booster theo mức người chơi thật dùng ở vị trí level đó.</p>
+   <div class="ruler" role="img" aria-label="Thang APS: Easy dưới 1,3; Medium 1,3 đến 1,75; Hard 1,75 đến 2,5; Very Hard trên 2,5">
+    <div class="r1">Easy<small>&lt; 1,3</small></div><div class="r2">M<small>1,3–1,75</small></div><div class="r3">Hard<small>1,75–2,5</small></div><div class="r4">Very Hard<small>&gt; 2,5</small></div>
+   </div>
+   <div class="scroll"><table>
+    <thead><tr><th>Kiểm tra trên level thật</th><th>Sai số APS TB</th><th>Xếp hạng khớp</th></tr></thead>
+    <tbody>
+     <tr><td>L6–20 (dữ liệu học)</td><td class="n">0,13</td><td class="n">0,92</td></tr>
+     <tr><td>L21–40 (kiểm tra)</td><td class="n">0,10</td><td class="n">0,80</td></tr>
+     <tr><td>L41–60 (kiểm tra)</td><td class="n">0,13</td><td class="n">0,72</td></tr>
+    </tbody>
+   </table></div>
+   <p class="note">Bot đoán thấp hơn thật ở L1–5, nơi người chơi còn mới. Xếp hạng khớp là tương quan thứ hạng giữa APS bot và APS thật.</p>
+  </div>
+  <figure class="fig" style="margin:0">
+   <img src="chuoi.webp" alt="Biểu đồ chuỗi L1–20: đường APS bot v2 bám sát chấm APS thật, đỉnh ở L8, L10 và L18">
+  </figure>
+ </div>
+</section>
+
+<section class="band">
+ <div class="in grid2">
+  <div>
+   <h2>Làm một level mới <a href="guide.html" style="font-size:16px;font-weight:800">Xem hướng dẫn chi tiết →</a></h2>
+   <ol class="steps">
+    <li><b>Thiết lập:</b> chọn map, khung màn hình, tô vùng cấm nơi không được đặt đồ.</li>
+    <li><b>Đồ &amp; sprite:</b> chọn category, số box và tổng số món, bấm Thêm các box.</li>
+    <li><b>Độ khó:</b> kéo cột tím đặt mức từng box, chọn APS mục tiêu và mẫu bố cục, bấm Tự xếp.</li>
+    <li>Xem APS ước tính, chỗ bot hay thua và bản đồ kẹt; khoá món ưng ý rồi xếp lại nếu cần.</li>
+    <li><b>Lưu:</b> lưu vào thư viện chung, hoặc tải JSON để đưa vào Unity.</li>
+   </ol>
+  </div>
+  <div>
+   <h2>Cho người chơi thử</h2>
+   <ol class="steps">
+    <li>Trong tool test độ khó, tab Quản lý level: thêm file JSON vừa tải, đặt nhãn muốn.</li>
+    <li>Gửi link cho người test; họ nhập tên và chơi mỗi level 5 ván.</li>
+    <li>Tab Kết quả: so nhãn đo với nhãn muốn, xem điểm suýt thua và đánh giá.</li>
+    <li>Tab Bot chơi: so người với bot v2 cùng luật.</li>
+   </ol>
+   <p class="note">Ảnh nền map L41–60 sẽ được thêm sau, hiện các map này hiển thị nền xám.</p>
+  </div>
+ </div>
+</section>
+
+<footer class="band">
+ <div class="in">Happy Tidy · công cụ nội bộ cho level design · dữ liệu người chơi từ log game, bot v2 chốt 26/11/2026.</div>
+</footer>
+
+</body></html>

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+</head><body style="margin:0">
+<title>Happy Tidy playtest</title>
+
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday work tool for a game designer and their playtesters
+   IDEA the game screen itself for testers; a scorecard table like the masterclass leaderboard for the designer
+   PICTURE the live room board with box strip and queue tray; on results, a points-mix bar per level
+   COLOUR white, ink, one blue accent (same as the level editor), tomato for danger, green for pass
+   TYPE Nunito 800 + Nunito
+   LAYOUT tabs on top; play = board fills screen; results = table left, detail right on laptop, stacked on phone */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#14161a);--ink:light-dark(#1b1d22,#eceae4);--mute:light-dark(#5b626e,#a3a9b3);--line:light-dark(#dde0e5,#2f343c);--panel:light-dark(#f4f6f7,#1c1f25);--hot:light-dark(#d23f29,#ff6b55);--ok:light-dark(#2b8a55,#5cc98d);--acc:light-dark(#1d5d8a,#7cb8e6);--warn:light-dark(#b8740a,#f0b44c);--stage:light-dark(#e9ecef,#0f1114)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.1;margin:0;font-weight:800;letter-spacing:-.01em}
+h2{font-size:20px;margin:0 0 6px;font-weight:800}
+h3{font-size:16px;margin:14px 0 6px;font-weight:800}
+.tabs{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.tabs a{padding:6px 12px;border-radius:9px;color:var(--ink);text-decoration:none;font-weight:700;border:1px solid var(--line)}
+.tabs a.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button,.btn{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 12px;min-height:40px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+button.danger{color:var(--hot)}
+button:disabled{opacity:.45;cursor:default}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.wrap{padding:16px max(5vw,16px,env(safe-area-inset-right,0px)) 32px max(5vw,16px,env(safe-area-inset-left,0px));max-width:1300px;margin:0 auto}
+.hint{color:var(--mute);font-size:13.5px;margin:4px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.lvl{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px}
+.lvl button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:84px;padding:10px 12px;background:var(--panel)}
+.lvl button b{font-size:16px}
+.lvl small{color:var(--mute);font-weight:600}
+.done{color:var(--ok)!important}
+/* play */
+#play{position:fixed;inset:0;background:var(--stage);display:flex;flex-direction:column;z-index:5}
+#play[hidden]{display:none}
+.ptop{display:flex;gap:8px;align-items:stretch;padding:calc(8px + env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 8px max(10px,env(safe-area-inset-left,0px));background:var(--bg);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.bx{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px 10px 4px 4px;flex:1 1 140px}
+.bx img{width:44px;height:44px;object-fit:contain}
+.bx b{font-size:15px}
+.bx small{color:var(--mute)}
+.pill{align-self:center;border-radius:99px;padding:3px 10px;font-weight:800;font-size:13px;background:var(--panel);border:1px solid var(--line);white-space:nowrap}
+.cv{position:relative;flex:1;min-height:0;touch-action:none}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+.pbot{background:var(--bg);border-top:1px solid var(--line);padding:8px max(10px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
+.queue{display:flex;gap:6px;justify-content:center;align-items:center}
+.slot{width:min(16vw,64px);aspect-ratio:1;border:2px dashed var(--line);border-radius:10px;display:grid;place-items:center;background:var(--panel)}
+.slot.full{border-style:solid;border-color:var(--mute)}
+.slot img{width:84%;height:84%;object-fit:contain}
+.queue.warn .slot.full{border-color:var(--warn)}
+.queue.danger .slot.full{border-color:var(--hot)}
+.res{display:flex;gap:4px;justify-content:center;align-items:center;margin-top:6px;font-size:12.5px;color:var(--mute);flex-wrap:wrap}
+.res img{width:26px;height:26px;object-fit:contain}
+.pctl{display:flex;justify-content:space-between;gap:8px;margin-top:6px;align-items:center}
+.modal{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 55%,transparent);display:grid;place-items:center;padding:16px;z-index:9}
+.modal[hidden]{display:none}
+.mbox{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.18);text-align:center}
+.mbox .big{font-size:30px;font-weight:800;line-height:1.1;margin:4px 0 8px}
+.mbox .row{justify-content:center}
+.flash{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 12px;border-radius:99px;font-weight:700;font-size:13px;pointer-events:none}
+/* results */
+.rgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;margin-top:12px;align-items:start}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:12.5px;color:var(--mute);font-weight:700}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.sel td{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+tbody tr{cursor:pointer}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-weight:800;font-size:12.5px;border:1px solid var(--line);white-space:nowrap}
+.tag.E{color:var(--ok)}.tag.M{color:var(--acc)}.tag.H{color:var(--warn)}.tag.VH{color:var(--hot)}
+.good{color:var(--ok);font-weight:800}.bad{color:var(--hot);font-weight:800}.meh{color:var(--mute);font-weight:700}
+.mix{display:flex;height:12px;border-radius:4px;overflow:hidden;background:var(--line);min-width:90px}
+.mix i{display:block;height:100%}
+.crit{list-style:none;padding:0;margin:6px 0}
+.crit li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.crit .v{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(9em,1fr));gap:8px;margin:8px 0}
+.kv div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.kv b{display:block;font-size:22px;line-height:1.1}
+.kv small{color:var(--mute)}
+.bars div{display:grid;grid-template-columns:88px minmax(0,1fr) 42px;gap:8px;align-items:center;margin:3px 0;font-size:13.5px}
+.bars i{display:block;height:14px;border-radius:3px;background:var(--acc)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--mute);margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;background:var(--c);vertical-align:-1px}
+.thr{display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:6px 10px;align-items:center;font-size:14px}
+.thr input{width:80px}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) 92px 80px auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.lrow input[type=text]{width:100%}
+.msg{font-weight:700;color:var(--acc);min-height:1.4em}
+@media(max-width:860px){.rgrid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){table{font-size:13px}th,td{padding:6px 4px}.hide-s{display:none}.lrow{grid-template-columns:minmax(0,1fr) 80px;}}
+</style>
+
+<header>
+ <h1>Happy Tidy playtest</h1>
+ <nav class="tabs" id="tabs"><a href="#choi" data-v="choi">Chơi thử</a><a href="#ket-qua" data-v="ket-qua">Kết quả</a><a href="#bot" data-v="bot">Bot chơi</a><a href="#level" data-v="level" id="tabLv">Quản lý level</a></nav>
+</header>
+
+<main>
+ <section class="wrap" id="v-choi">
+  <div class="row" style="justify-content:space-between">
+   <div><h2>Chơi thử level</h2><p class="hint" id="howto">Chơi mỗi level 5 lần. Không có booster. Khi hàng chờ đầy, bạn được Revive tối đa 2 lần. Sau mỗi ván trả lời 1 câu.</p></div>
+   <label class="row">Tên của bạn <input id="nick" type="text" maxlength="30" placeholder="vd: Lan" style="width:150px"></label>
+  </div>
+  <div class="lvl" id="lvList"></div>
+  <p class="hint" id="pend"></p>
+ </section>
+
+ <section class="wrap" id="v-ket-qua" hidden>
+  <div class="row" style="justify-content:space-between;align-items:flex-end">
+   <div><h2 id="rTitle">Kết quả playtest</h2><p class="hint" id="rSub"></p></div>
+   <div class="row"><button id="csv">Tải CSV</button><button id="impBtn">Nhập file kết quả</button><input type="file" id="impFile" accept=".json" hidden multiple></div>
+  </div>
+  <div class="rgrid">
+   <div class="card scroll"><table id="rTable"><thead><tr><th>Level</th><th>Nhãn muốn</th><th>Nhãn đo</th><th class="n">Ván</th><th class="n">Thắng không Revive</th><th class="n">Điểm suýt thua</th><th>Cơ cấu điểm</th><th>Đánh giá</th><th class="n hide-s">Bot TB thắng</th></tr></thead><tbody></tbody></table>
+    <div class="legend"><span style="--c:#2b8a55">10đ Revive 1 rồi thắng</span><span style="--c:#1d5d8a">7đ queue lên 4/5</span><span style="--c:#7cb8e6">3đ lên 3/5</span><span style="--c:#b8740a">2đ Revive 2 lần</span><span style="--c:#c9ced6">0đ</span></div>
+   </div>
+   <div class="card" id="detail"><p class="hint">Bấm 1 level trong bảng để xem chi tiết.</p></div>
+  </div>
+  <details class="card" style="margin-top:16px"><summary><b>Cách chấm và ngưỡng</b> (sửa được, chỉ lưu trên máy này)</summary>
+   <p class="hint">Điểm suýt thua mỗi ván (theo bài tập masterclass, đổi sang Happy Tidy): 10đ thua rồi Revive 1 lần và thắng · 7đ thắng không Revive, queue có lúc lên 4/5 · 3đ thắng, queue cao nhất 3/5 · 2đ Revive 2 lần mới thắng · 0đ thắng mà queue không quá 2/5, hoặc thua hẳn.</p>
+   <p class="hint">Nhãn đo theo tỉ lệ thắng không cần Revive. Các mốc % là đoán, chưa kiểm chứng với dữ liệu thật.</p>
+   <div class="thr" id="thr"></div>
+  </details>
+ </section>
+
+ <section class="wrap" id="v-bot" hidden>
+  <h2>Bot chơi thử</h2>
+  <p class="hint">Bot v2 = 6 nhóm người chơi học từ log thật (độ chính xác × mức dùng booster). Mỗi level chạy 2 kiểu: <b>như ngoài game</b> (có booster, dùng nhiều hơn ở level sau) để ước tính APS và nhãn; <b>như luật playtest</b> (không booster, Revive tối đa 2) để chấm điểm suýt thua, khó tốt / dễ tốt, so được với người test. Bot không trả lời "muốn chơi lại" và không chơi lại nhiều lần, nên 2 tiêu chí đó để trống. Vị trí level lấy ở tab Quản lý level, để trống thì lấy số trong tên, không có thì coi là 40.</p>
+  <div class="card row">
+   <b>Bot v2</b> <span class="hint" style="margin:0">(6 nhóm người chơi, giống editor)</span>
+   <label class="row">Số ván mỗi level <input id="bN" type="number" min="10" max="2000" value="120" style="width:90px"></label>
+   <button class="pri" id="bGo">▶ Cho bot chơi tất cả level</button><span class="hint" id="bMsg"></span>
+  </div>
+  <div class="rgrid">
+   <div class="card scroll"><table id="bTable"><thead><tr><th>Level</th><th>Nhãn muốn</th><th>Nhãn bot (APS)</th><th class="n">APS ước tính</th><th class="n">Thắng không trợ giúp</th><th>Nhãn đo (người)</th><th class="n">Điểm suýt thua bot / người</th><th>Cơ cấu điểm bot</th><th>Đánh giá (bot, luật playtest)</th><th></th></tr></thead><tbody></tbody></table></div>
+   <div class="card" id="bDetail"><p class="hint">Bấm "Cho bot chơi" rồi bấm 1 level để xem chi tiết. Nút 👁 mở màn chơi để xem bot chơi từng bước.</p></div>
+  </div>
+ </section>
+
+ <section class="wrap" id="v-level" hidden>
+  <h2>Level đang cho chơi thử</h2>
+  <p class="hint">Người test chỉ thấy tên level, không thấy nhãn. Nhãn muốn là độ khó designer định làm, dùng để so với kết quả đo.</p>
+  <div id="lvAdmin"></div>
+  <h3>Thêm level</h3>
+  <div class="card">
+   <div class="row"><b>Từ file</b> <button id="addFile">Mở file level (.json xuất từ editor hoặc Unity)</button><input type="file" id="addFileIn" accept=".json" hidden multiple></div>
+   <div class="row" style="margin-top:10px"><b>Level thật trong game</b> <select id="realSel"></select><button id="addReal">Thêm</button></div>
+   <p class="msg" id="lvMsg"></p>
+  </div>
+  <div class="card" id="pubLv" hidden style="margin-top:12px"><b>Đưa danh sách level lên web</b><p class="hint">Bản web tĩnh không có kho dữ liệu chung. Tải file này rồi thay file <code>playtest-levels.json</code> trong thư mục web (GitHub repo). Người test mở link sẽ thấy đúng các level này.</p><button id="pubBtn" class="pri">Tải playtest-levels.json</button>
+  </div>
+ </section>
+</main>
+
+<div id="play" hidden>
+ <div class="ptop" id="pTop"></div>
+ <div class="cv" id="cbox"><canvas id="cv"></canvas><div class="flash" id="flash" hidden></div>
+  <div class="modal" id="mFull" hidden><div class="mbox"><div class="big">Hàng chờ đầy!</div><p id="mFullTxt"></p><div class="row"><button class="pri" id="doRev">Dùng Revive</button><button id="giveUp">Chịu thua</button></div></div></div>
+  <div class="modal" id="mEnd" hidden><div class="mbox"><div class="big" id="mEndBig"></div><p id="mEndTxt"></p><p><b>Bạn có muốn chơi lại level này không?</b></p><div class="row"><button class="pri" data-rp="1">Có</button><button data-rp="0">Không</button></div><p class="hint" id="mEndSave"></p></div></div>
+  <div class="modal" id="mNext" hidden><div class="mbox"><div class="big" id="mNextBig">Đã lưu</div><p id="mNextTxt"></p><div class="row"><button class="pri" id="again">Chơi tiếp level này</button><button id="toList">Về danh sách</button></div></div></div>
+ </div>
+ <div class="pbot"><div class="queue" id="queue"></div><div class="res" id="res" hidden></div>
+  <div class="pctl"><button id="quit">✕ Bỏ ván</button><span class="pill" id="pInfo"></span></div></div>
+</div>
+
+<script>
+{
+const MAPW=2028,MAPH=2640,QMAX=5,REVMAX=2;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let CAT={},SP={},DATA=null,S={bg:'HT_BG_1',boxes:[],items:[],thr:1},uid=1;
+const LS=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},LSset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+
+/* ---------- sprites (same as level editor) ---------- */
+const IMG={};function img(src){if(!IMG[src]){IMG[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}return IMG[src]}
+const IMGD={};function imgNow(src){if(!(src in IMGD)){IMGD[src]=null;img(src).then(i=>{IMGD[src]=i;draw()}).catch(()=>{})}return IMGD[src]}
+const THUMB={};function thumb(sid){if(THUMB[sid])return THUMB[sid];const s=SP[sid];if(!s)return '';const a=IMGD[s.atlas];if(!a){imgNow(s.atlas);return ''}const c=document.createElement('canvas');const k=64/Math.max(s.w,s.h);c.width=Math.max(1,Math.round(s.w*k));c.height=Math.max(1,Math.round(s.h*k));c.getContext('2d').drawImage(a,s.ax,s.ay,s.w,s.h,0,0,c.width,c.height);return THUMB[sid]=c.toDataURL()}
+function decode(m){const[c,r,b]=m;const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const o=new Uint8Array(c*r);for(let i=0;i<c*r;i++)o[i]=(u[i>>3]>>(7-(i&7)))&1;return{c,r,a:o}}
+function masks(s){if(!s.M48){s.M48=decode(s.m48);s.M96=decode(s.m96)}return s}
+const PH={w:120,h:120};
+function geo(it){const s=SP[it.sid];const key=it.x+','+it.y+','+it.sx+','+it.sy+','+it.a+','+it.sid;if(it._k===key)return it._g;
+ const w=s?s.w:PH.w,h=s?s.h:PH.h,r=it.a*Math.PI/180,co=Math.cos(r),si=Math.sin(r);let pts=[];
+ if(s){masks(s);const M=s.M48,st=Math.max(1,Math.max(w,h)/48);for(let i=0;i<M.r;i++)for(let j=0;j<M.c;j++)if(M.a[i*M.c+j]){const px=(st/2+j*st-w/2)*it.sx,py=(h/2-(st/2+i*st))*it.sy;pts.push(it.x+px*co-py*si,it.y+px*si+py*co)}}
+ const R=Math.hypot(w,h)/2*Math.max(Math.abs(it.sx),Math.abs(it.sy));it._k=key;return it._g={w,h,co,si,pts:new Float32Array(pts),R}}
+function inside(it,x,y){const g=geo(it),s=SP[it.sid];const dx=x-it.x,dy=y-it.y;const lx=(dx*g.co+dy*g.si)/it.sx,ly=(-dx*g.si+dy*g.co)/it.sy;const u=lx+g.w/2,v=g.h/2-ly;if(u<0||v<0||u>=g.w||v>=g.h)return false;if(!s)return true;const M=masks(s).M96,st=Math.max(1,Math.max(g.w,g.h)/96);const cj=Math.floor(u/st),ci=Math.floor(v/st);if(cj>=M.c||ci>=M.r)return false;return M.a[ci*M.c+cj]===1}
+function boxIdx(id){return S.boxes.findIndex(b=>b.id===id)}
+function analyze(){const n=S.items.length,thr=S.thr/100,above=[],below=[];for(let i=0;i<n;i++){above.push([]);below.push([])}
+ const G_=S.items.map(geo);
+ for(let i=0;i<n;i++){const gi=G_[i],P=gi.pts,ns=P.length/2;if(!ns)continue;
+  for(let j=i+1;j<n;j++){const gj=G_[j],a=S.items[i],b=S.items[j];if(Math.hypot(a.x-b.x,a.y-b.y)>gi.R+gj.R)continue;let c=0;for(let k=0;k<ns;k++)if(inside(b,P[2*k],P[2*k+1]))c++;if(c>=Math.max(1,thr*ns)){above[i].push(j);below[j].push(i)}}}
+ const Wd=(n+31)>>5,cl=new Array(n);
+ for(let i=n-1;i>=0;i--){const b=new Uint32Array(Wd);for(const j of above[i]){b[j>>5]|=1<<(j&31);for(let w=0;w<Wd;w++)b[w]|=cl[j][w]}cl[i]=b}
+ const cat=S.items.map(it=>SP[it.sid]?.cat??S.boxes[boxIdx(it.box)]?.cat??-1);
+ return{above,below,cl,cat}}
+function bits(b,f){for(let w=0;w<b.length;w++){let v=b[w];while(v){const lo=v&-v;f(w*32+31-Math.clz32(lo));v^=lo}}}
+
+/* ---------- game rules + bots (same logic as level editor) ---------- */
+class Game{constructor(C,r){this.C=C;this.r=r||null;const n=S.items.length,B=S.boxes.length;this.rm=new Uint8Array(n);this.bc=Int32Array.from(C.above.map(a=>a.length));this.fill=new Int32Array(B);this.slots=[-1,-1];this.next=0;this.q=[];this.done=0;this.st=B?'play':'win';this.taps=0;this.peak=0;this.d3=0;this.cap=QMAX;this.res=[];this.pr=0;this.off=0;this.helps=0;this.hb={M:0,C:0,B:0,WS:0,R:0};this.armed=true;this.openInto(0);this.openInto(1)}
+ need(b){return S.boxes[b].count-this.fill[b]}
+ openInto(k){if(this.next<S.boxes.length){const b=this.next++;this.slots[k]=b;this.fly(b)}else this.slots[k]=-1}
+ close(b){this.done++;const k=this.slots.indexOf(b);if(this.done===S.boxes.length){this.slots[k]=-1;this.st='win';return}this.openInto(k)}
+ fly(b){if(!this.res)this.res=[];const cat=S.boxes[b].cat;for(const L of [this.q,this.res]){let i=0;while(i<L.length&&this.need(b)>0){if(this.C.cat[L[i]]===cat){L.splice(i,1);this.fill[b]++}else i++}}if(this.need(b)===0)this.close(b)}
+ match(cat){let best=-1;for(const b of this.slots)if(b>=0&&S.boxes[b].cat===cat&&this.need(b)>0&&(best<0||b<best))best=b;return best}
+ ok(i){return!this.rm[i]&&this.bc[i]===0}
+ pick(i){if(this.st!=='play'||!this.ok(i))return false;this.rm[i]=1;for(const j of this.C.below[i])this.bc[j]--;this.taps++;const b=this.match(this.C.cat[i]);
+  if(b>=0){this.fill[b]++;if(this.need(b)===0)this.close(b)}else{this.q.push(i);if(this.q.length===3)this.d3++;if(this.pr>0)this.help();if(this.q.length>=this.cap){if(this.pr>0&&this.helps<6&&this.r()<this.pr){this.helps++;this.hb.R++;this.res.push(...this.q);this.q=[];this.armed=true}else this.st='lose'}}
+  if(this.q.length>this.peak)this.peak=this.q.length;return true}
+ move(){if(this.st!=='play')return null;const n=S.items.length;let bi=-1,bb=1e9,bu=-1,tie=1;
+  for(let i=0;i<n;i++){if(!this.ok(i))continue;const b=this.match(this.C.cat[i]);if(b<0)continue;const u=this.C.below[i].length;if(b<bb||(b===bb&&u>bu)){bi=i;bb=b;bu=u;tie=1}else if(this.r&&b===bb&&u===bu&&this.r()<1/++tie)bi=i}
+  if(bi>=0)return bi;
+  let bq=1e9,bn=1e9,bp=-1;tie=1;
+  for(let t=0;t<n;t++){if(this.rm[t])continue;const b=this.match(this.C.cat[t]);if(b<0)continue;let q=0,nb=0,pk=-1;bits(this.C.cl[t],j=>{if(this.rm[j])return;nb++;if(this.match(this.C.cat[j])<0)q++;if(pk<0&&this.bc[j]===0)pk=j});if(pk<0)continue;
+   if(q<bq||(q===bq&&nb<bn)){bq=q;bn=nb;bp=pk;tie=1}else if(this.r&&q===bq&&nb===bn&&this.r()<1/++tie)bp=pk}
+  return bp<0?null:bp}
+ /* bot v2 boosters (same as editor v14 / bot.py): at queue 4 once per danger, use 1 booster with prob pr; mix Vacuum 43% / Bloom 26% / +box 20% / +slot 11% */
+ help(){const L=this.q.length;if(L<4){this.armed=true;return}if(!this.armed||L>=this.cap||this.helps>=6)return;this.armed=false;if(this.r()>=this.pr)return;
+  const u=this.r();const b=u<.43?'M':u<.69?'C':u<.89?'B':'WS';this.helps++;this.hb[b]++;
+  if(b==='C'){this.res.push(...this.q);this.q=[]}else if(b==='WS')this.cap++;
+  else if(b==='B'){if(this.slots.length<3&&this.next<S.boxes.length){this.slots.push(-1);this.openInto(2)}}
+  else{let tb=-1;for(const x of this.slots)if(x>=0&&this.need(x)>0&&(tb<0||this.need(x)<this.need(tb)))tb=x;if(tb<0)return;const cat=S.boxes[tb].cat,n=S.items.length,its=[];
+   for(let j=0;j<n;j++)if(!this.rm[j]&&this.C.cat[j]===cat)its.push(j);its.sort((a,c)=>this.bc[a]-this.bc[c]||c-a);
+   for(const j of its.slice(0,this.need(tb))){this.rm[j]=1;for(const k of this.C.below[j])this.bc[k]--;this.fill[tb]++}
+   let i=0;while(i<this.q.length&&this.need(tb)>0){if(this.C.cat[this.q[i]]===cat){this.q.splice(i,1);this.fill[tb]++}else i++}if(this.need(tb)===0)this.close(tb)}}
+}
+const rng=seed=>{let s=seed>>>0||1;return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}};
+const PN={1:.78,2:.87,3:.90,4:.91,5:.91,6:.93},lg=p=>{p=Math.min(Math.max(p,1e-3),1-1e-3);return Math.log(p/(1-p))},sg=x=>1/(1+Math.exp(-x));
+function pSpot(c,n,off){const k=CAT[c];const s=(k&&k.spot!=null?k.spot:0.77)+(off?0.04:0);return sg(lg(s)+lg(PN[Math.min(n,6)])-lg(PN[1])+(off||0))}
+function avgMove(g,r){if(g.st!=='play')return null;const n=S.items.length,C=g.C,oc=new Set();for(const b of g.slots)if(b>=0&&g.need(b)>0)oc.add(S.boxes[b].cat);
+ const vis=new Map(),unc=[];for(let i=0;i<n;i++)if(g.ok(i)){unc.push(i);const c=C.cat[i];if(oc.has(c)){if(!vis.has(c))vis.set(c,[]);vis.get(c).push(i)}}
+ const sp=[];for(const[c,l]of vis)if(r()<pSpot(c,l.length,g.off))sp.push(c);
+ if(sp.length){const l=vis.get(sp[Math.floor(r()*sp.length)]);return l[Math.floor(r()*l.length)]}
+ const nong=unc.filter(j=>!oc.has(C.cat[j]));
+ if(nong.length&&r()<(vis.size?0.57:0.87)){const cls=[];for(let x=0;x<n;x++){if(g.rm[x]||!oc.has(C.cat[x])||g.ok(x))continue;const st=new Set();bits(C.cl[x],j=>{if(!g.rm[j])st.add(j)});cls.push(st)}
+  if(cls.length){const mn=Math.min(...cls.map(c=>c.size));const pool=r()<0.81?cls.filter(c=>c.size===mn):cls;const cand=new Set();for(const st of pool)for(const j of st)cand.add(j);
+   const tops=nong.filter(j=>cand.has(j));if(tops.length)return tops[Math.floor(r()*tops.length)]}}
+ const pool=nong.length?nong:unc;if(!pool.length)return null;return pool[Math.floor(r()*pool.length)]}
+function runBot(C,N,kind,seed,prm){const r=rng(seed);let win=0,d3=0,helps=0;for(let k=0;k<N;k++){const g=new Game(C,r);if(prm){g.off=prm.off;g.pr=prm.pr}let guard=0;while(g.st==='play'&&guard++<6000){const m=kind==='avg'?avgMove(g,r):g.move();if(m==null)break;g.pick(m)}if(g.st==='win')win++;d3+=g.d3;helps+=g.helps}return{win:win/N,d3:d3/N,helps:helps/N}}
+
+/* human game: Revive moves the queue to a reserve; reserve items still fly into matching boxes (ASSUMPTION, like Bloom) */
+class HGame extends Game{
+ visibleMatch(ex){for(let i=0;i<S.items.length;i++)if(i!==ex&&this.ok(i)&&this.match(this.C.cat[i])>=0)return true;return false}
+}
+
+/* ---------- level parsing ---------- */
+function parseLevel(o){if(!o||!Array.isArray(o.order)||!Array.isArray(o.content))throw new Error('file không phải level (thiếu order hoặc content)');const m=o.editorMeta||{};
+ return{bg:'HT_BG_'+parseInt(String(o.bg||'1').replace(/\D/g,''),10),name:String(o.levelName??''),boxes:o.order.map(b=>({id:+b.box,cat:+b.type,count:+b.count})),items:o.content.map(c=>({uid:uid++,sid:String(c.id),box:+c.box,x:+c.x,y:+c.y,sx:+(c.scaleX??1),sy:+(c.scaleY??1),a:+(c.angle||0)})),thr:+m.coverThresholdPct||1}}
+const PREP={};function prep(lv){if(PREP[lv.id])return PREP[lv.id];const keep=S;S=parseLevel(JSON.parse(lv.json));const C=analyze();const o={S,C};S=keep;return PREP[lv.id]=o}
+function catName(c){return CAT[c]?CAT[c].name.replace(/^[^_]+_/,''):'?'}
+function catSprites(cat){return(CAT[cat]?.sprites||[]).filter(id=>SP[id])}
+
+/* ---------- data: levels + plays (shared db, else this browser) ---------- */
+let DB=null,USER=null,ME=null,ADMIN=true,LEVELS=[],PLAYS=[];
+const LBL=['E','M','H','VH'],LBLN={E:'Dễ',M:'Vừa',H:'Khó',VH:'Rất khó'};
+async function dataInit(){
+ try{USER=window.claude&&await window.claude.use('user')}catch(e){}
+ if(USER){try{ME=await USER.id()}catch(e){}try{ADMIN=!!(await USER.canEdit())}catch(e){}}
+ $('tabLv').hidden=!ADMIN;$('impBtn').hidden=!ADMIN;
+ try{DB=window.claude&&await window.claude.use('db')}catch(e){}
+ if(!DB){/* static site: designer opens playtest.html?admin=1; testers get the level list from playtest-levels.json in the site folder */
+  ADMIN=/[?&]admin=1/.test(location.search);$('tabLv').hidden=!ADMIN;$('impBtn').hidden=!ADMIN;$('pubLv').hidden=!ADMIN;
+  let file=[];try{const r=await fetch('playtest-levels.json',{cache:'no-store'});if(r.ok)file=await r.json()}catch(e){}
+  const own=ADMIN?(LS('ht_pt_levels')||[]):[];const ids=new Set(own.map(l=>l.id));LEVELS=ADMIN&&own.length?own:file.filter(l=>!ids.has(l.id));if(ADMIN&&!own.length&&file.length)LSset('ht_pt_levels',LEVELS);
+  PLAYS=LS('ht_pt_plays')||[];renderAll();route();return}
+ const to=setTimeout(renderAll,10000);
+ DB.collection('levels').onSnapshot(sn=>{clearTimeout(to);LEVELS=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.t-b.t);renderAll()},()=>{clearTimeout(to);renderAll()});
+ DB.collection('plays').onSnapshot(sn=>{PLAYS=sn.docs.map(d=>({id:d.id,...d.data()}));renderAll()},()=>{});
+}
+async function saveLevel(rec){if(DB){await DB.doc('levels/'+rec.id).set(rec);return}const k=LEVELS.findIndex(x=>x.id===rec.id);if(k>=0)LEVELS[k]=rec;else LEVELS.push(rec);LSset('ht_pt_levels',LEVELS);renderAll()}
+async function delLevel(id){if(DB){await DB.doc('levels/'+id).delete();return}LEVELS=LEVELS.filter(x=>x.id!==id);LSset('ht_pt_levels',LEVELS);renderAll()}
+async function savePlay(p){if(DB){try{await DB.doc('plays/'+p.id).set(p);return true}catch(e){}}
+ const pend=LS('ht_pt_pending')||[];pend.push(p);LSset('ht_pt_pending',pend);if(!DB){PLAYS.push(p);LSset('ht_pt_plays',PLAYS)}renderPend();return false}
+
+function renderAll(){renderList();renderAdmin();renderResults();renderBot()}
+function myKey(){return ME||('local:'+($('nick').value.trim()||'?'))}
+function renderList(){const act=LEVELS.filter(l=>l.on!==false);const mk=myKey();
+ $('lvList').innerHTML=act.length?act.map(l=>{const n=PLAYS.filter(p=>p.lv===l.id&&p.who===mk).length;return`<button data-play="${esc(l.id)}"><b>${esc(l.name)}</b><small class="${n>=5?'done':''}">${n>=5?'✓ Đã chơi đủ ':'Đã chơi '}${n}/5 ván</small></button>`}).join(''):`<p class="hint">Chưa có level nào để chơi thử.${ADMIN?' Thêm level ở tab Quản lý level.':''}</p>`;renderPend()}
+function renderPend(){const p=LS('ht_pt_pending')||[];$('pend').innerHTML=p.length?`${p.length} ván chưa gửi lên tool (lưu trong trình duyệt này). <button id="dlPend">Tải file kết quả</button> rồi gửi cho designer.`:'';const b=$('dlPend');if(b)b.onclick=()=>saveFile('ketqua_playtest_'+($('nick').value.trim()||'nguoitest')+'.json',JSON.stringify(p))}
+async function saveFile(fn,text,type){let dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch(e){}
+ if(dl){try{await dl.save({filename:fn,data:text});return}catch(e){return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'application/json'}));a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+
+/* ---------- play ---------- */
+const cv=$('cv'),ctx=cv.getContext('2d');let CW=0,CH=0,view={cx:0,cy:0,z:.3};let P=null,G=null,LV=null;
+function resize(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;CW=r.width;CH=r.height;cv.width=Math.round(CW*d);cv.height=Math.round(CH*d);ctx.setTransform(d,0,0,d,0,0);draw()}
+const toS=(x,y)=>[(x-view.cx)*view.z+CW/2,(view.cy-y)*view.z+CH/2];
+const toM=(sx,sy)=>[(sx-CW/2)/view.z+view.cx,view.cy-(sy-CH/2)/view.z];
+function fit(){view.cx=0;view.cy=0;view.z=Math.min(CH/MAPH,CW/1218);if(CW>MAPW*view.z*1.02)view.z=Math.min(CH/MAPH,CW/MAPW)*0.98;draw()}
+let raf=0;function draw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;paint()})}
+function paint(){if(!CW||!G)return;ctx.clearRect(0,0,CW,CH);const bg=imgNow(`bg/${S.bg}.webp`);const[x0,y0]=toS(-MAPW/2,MAPH/2);if(bg)ctx.drawImage(bg,x0,y0,MAPW*view.z,MAPH*view.z);else{ctx.fillStyle='#b9bec5';ctx.fillRect(x0,y0,MAPW*view.z,MAPH*view.z)}
+ S.items.forEach((it,i)=>{if(G.rm[i])return;const s=SP[it.sid];const[px,py]=toS(it.x,it.y);ctx.save();ctx.translate(px,py);ctx.rotate(-it.a*Math.PI/180);ctx.scale(view.z*it.sx,view.z*it.sy);const a=s&&imgNow(s.atlas);if(a)ctx.drawImage(a,s.ax,s.ay,s.w,s.h,-s.w/2,-s.h/2,s.w,s.h);else{ctx.fillStyle='rgba(120,120,120,.6)';ctx.fillRect(-60,-60,120,120)}ctx.restore()})}
+function hitAt(mx,my){for(let i=S.items.length-1;i>=0;i--){if(G.rm[i])continue;if(inside(S.items[i],mx,my))return i}return-1}
+function flash(t){const f=$('flash');f.textContent=t;f.hidden=false;clearTimeout(flash.t);flash.t=setTimeout(()=>f.hidden=true,900)}
+
+async function startPlay(lv,opt){stopWatch();LV=lv;const o=prep(lv);S=o.S;G=new HGame(o.C);const bot=opt&&opt.bot;
+ const prevN=PLAYS.filter(p=>p.lv===lv.id&&p.who===myKey()).length;
+ P=newRec(lv,o,bot?{who:'bot',nick:'Bot',att:1,bot}:{who:myKey(),nick:$('nick').value.trim(),att:prevN+1});
+ const BR=rng((Math.random()*1e9)|0);if(bot==='avg'){const p=PERS[Math.floor(BR()*PERS.length)];G.off=offOf(p);P.nick=p[0]}
+ ['mFull','mEnd','mNext'].forEach(m=>$(m).hidden=true);$('play').hidden=false;document.body.style.overflow='hidden';
+ await Promise.all([...new Set(S.items.map(it=>SP[it.sid]?.atlas).filter(Boolean))].map(a=>img(a).then(i=>IMGD[a]=i).catch(()=>{})));
+ resize();fit();renderHud();if(bot)WATCH=setInterval(()=>{if(!G||G.st!=='play')return;if(!$('mFull').hidden)return;const m=botPick(G,bot,BR);if(m==null){end('lose');return}tap(m)},350)}
+function renderHud(){if(!G)return;
+ $('pTop').innerHTML=G.slots.map(b=>b<0?'<div class="bx"><small style="padding:12px">Hết box</small></div>':`<div class="bx"><img alt="" src="${thumb(catSprites(S.boxes[b].cat)[0])}"><div><b>${G.fill[b]}/${S.boxes[b].count}</b><br><small>${esc(catName(S.boxes[b].cat))}</small></div></div>`).join('')+`<span class="pill">Còn ${S.boxes.length-G.done} box</span>`;
+ const q=$('queue');q.className='queue'+(G.q.length>=4?' danger':G.q.length>=3?' warn':'');q.innerHTML=Array.from({length:QMAX},(_,k)=>{const i=G.q[k];return`<div class="slot${i!=null?' full':''}">${i!=null?`<img alt="" src="${thumb(S.items[i].sid)}">`:''}</div>`}).join('');
+ const r=G.res||[];$('res').hidden=!r.length;$('res').innerHTML='Kho phụ sau Revive: '+r.map(i=>`<img alt="" src="${thumb(S.items[i].sid)}">`).join('');
+ $('pInfo').textContent=`${LV.name} · ${P.bot?'Bot v2 ('+P.nick+') đang chơi':'ván '+P.att} · Revive còn ${REVMAX-P.rev}`;draw()}
+/* core rules shared by people and bots: one pick / one revive / end, updating the run record P */
+function newRec(lv,o,extra){return{id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),lv:lv.id,lvName:lv.name,t0:Date.now(),taps:[],rev:0,peak0:0,peakAll:0,d3:0,d4:0,cov:0,qtaps:0,peakPos:0,full:[],res:null,replay:null,n:o.S.items.length,boxes:o.S.boxes.length,...extra}}
+function corePick(G,P,i,dt){if(!G.ok(i)){P.cov++;P.taps.push([dt,i,2]);return 'cov'}
+ const willQ=G.match(G.C.cat[i])<0,fairPre=willQ&&G.q.length===QMAX-1?G.visibleMatch(i):null,ql=G.q.length;
+ G.pick(i);const toQ=G.q.length>ql||(willQ&&G.st==='lose');if(toQ)P.qtaps++;P.taps.push([dt,i,toQ?1:0]);
+ const L=G.q.length;if(L>P.peakAll){P.peakAll=L;P.peakPos=G.taps/S.items.length}if(P.rev===0&&L>P.peak0)P.peak0=L;if(toQ&&L===4)P.d4++;P.d3=(P.d3base||0)+G.d3;
+ if(G.st==='lose')P.full.push({fair:fairPre,pos:G.taps/S.items.length});return G.st}
+function coreRevive(G,P){P.rev++;G.res=(G.res||[]).concat(G.q);G.q=[];G.st='play';P.d3base=(P.d3base||0)+G.d3;G.d3=0;
+ for(const b of G.slots)if(b>=0){/* reserve items that match open boxes fly in */const cat=S.boxes[b].cat;let k=0;while(k<G.res.length&&G.need(b)>0){if(G.C.cat[G.res[k]]===cat){G.res.splice(k,1);G.fill[b]++}else k++}if(G.need(b)===0&&G.slots.includes(b))G.close(b)}}
+function coreEnd(G,P,res,dur){G.st=res==='win'?'win':'lose';P.res=res;P.dur=dur;P.ntap=G.taps;P.prog=G.taps/S.items.length;delete P.d3base;P.score=score(P)}
+/* bot under playtest rules: no booster, always Revive (max 2) when the queue is full */
+function botPick(G,kind,r){return kind==='skilled'?G.move():avgMove(G,r)}
+function simRun(lv,o,kind,r,grp){const keep=S;S=o.S;const G=new HGame(o.C,r);if(grp)G.off=grp.off;const P=newRec(lv,o,{who:'bot',nick:grp?grp.name:'Bot giỏi',att:1,bot:kind});let t=0,guard=0;
+ while(G.st==='play'&&guard++<6000){const m=botPick(G,kind,r);if(m==null){coreEnd(G,P,'lose',t);break}t+=1000;const st=corePick(G,P,m,t);if(st==='lose'){if(P.rev<REVMAX)coreRevive(G,P);if(G.st==='lose'){coreEnd(G,P,'lose',t);break}}if(G.st==='win'){coreEnd(G,P,'win',t);break}}
+ if(!P.res)coreEnd(G,P,'lose',t);P.taps=[];S=keep;return P}
+let WATCH=null;
+function tap(i){if(!G||G.st!=='play')return;const dt=Date.now()-P.t0;const st=corePick(G,P,i,dt);
+ if(st==='cov'){flash('Món này đang bị che');return}
+ if(st==='lose'){if(P.rev<REVMAX){if(P.bot){coreRevive(G,P);flash('Bot dùng Revive');if(G.st==='win')end('win')}else{$('mFullTxt').textContent=`Bạn còn ${REVMAX-P.rev} lần Revive. Revive sẽ chuyển 5 món trong hàng chờ sang kho phụ để chơi tiếp.`;$('mFull').hidden=false}}else end('lose')}
+ else if(st==='win')end('win');renderHud()}
+$('doRev').onclick=()=>{coreRevive(G,P);$('mFull').hidden=true;if(G.st==='win')end('win');renderHud()};
+$('giveUp').onclick=()=>{$('mFull').hidden=true;end('lose')};
+$('quit').onclick=()=>{if(!G)return;if(G.st==='play'&&P.taps.length&&!P.bot)end('quit');else closePlay()};
+function score(p){if(p.res!=='win')return 0;if(p.rev===1)return 10;if(p.rev>=2)return 2;return p.peak0>=4?7:p.peak0===3?3:0}
+function end(res){stopWatch();coreEnd(G,P,res,Date.now()-P.t0);
+ const who=P.bot?'Bot':'Bạn';
+ if(P.bot){$('mNextBig').textContent=res==='win'?'Bot thắng':'Bot thua';$('mNextTxt').textContent=`${res==='win'?(P.rev?`Dùng ${P.rev} Revive.`:`Hàng chờ đầy nhất ${P.peak0}/5.`):`Dọn được ${Math.round(P.prog*100)}% món.`} Điểm suýt thua: ${P.score}. Ván xem bot không được lưu.`;$('again').textContent='Xem ván khác';$('toList').textContent='Đóng';$('mNext').hidden=false;renderHud();return}
+ $('mEndBig').textContent=res==='win'?'Thắng!':res==='quit'?'Đã bỏ ván':'Thua';
+ $('mEndTxt').textContent=res==='win'?(P.rev?`${who} đã dùng ${P.rev} lần Revive.`:`Hàng chờ đầy nhất: ${P.peak0}/5.`):`${who} dọn được ${Math.round(P.prog*100)}% món.`;
+ $('mEndSave').textContent='';$('mEnd').hidden=false;renderHud()}
+document.querySelectorAll('[data-rp]').forEach(b=>b.onclick=async()=>{P.replay=b.dataset.rp==='1';P.t=Date.now();$('mEndSave').textContent='Đang lưu…';
+ const ok=await savePlay(P);$('mEnd').hidden=true;const n=P.att;$('mNextBig').textContent=ok?'Đã lưu ván '+n:'Đã lưu trong máy';$('mNextTxt').textContent=(ok?'':'Chưa gửi lên tool được. Ở màn danh sách có nút tải file kết quả. ')+(n>=5?'Bạn đã chơi đủ 5 ván level này.':`Còn ${5-n} ván nữa là đủ.`);$('again').textContent='Chơi tiếp level này';$('toList').textContent='Về danh sách';$('mNext').hidden=false});
+$('again').onclick=()=>startPlay(LV,P&&P.bot?{bot:P.bot}:null);
+$('toList').onclick=closePlay;
+function stopWatch(){if(WATCH){clearInterval(WATCH);WATCH=null}}
+function closePlay(){stopWatch();$('play').hidden=true;document.body.style.overflow='';const wasBot=P&&P.bot;G=null;if(wasBot)location.hash='bot';renderAll()}
+
+/* pointer: tap on release, drag pans, pinch/wheel zoom */
+const ptrs=new Map();let drag=null,pinch=null;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.offsetX,e.offsetY]);if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),z:view.z};drag=null;return}drag={sx:e.offsetX,sy:e.offsetY,cx:view.cx,cy:view.cy,moved:false}});
+cv.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,[e.offsetX,e.offsetY]);if(pinch&&ptrs.size===2){const[a,b]=[...ptrs.values()];view.z=Math.max(0.05,Math.min(3.5,pinch.z*Math.hypot(a[0]-b[0],a[1]-b[1])/pinch.d));draw();return}
+ if(drag){const dx=e.offsetX-drag.sx,dy=e.offsetY-drag.sy;if(!drag.moved&&Math.hypot(dx,dy)>8)drag.moved=true;if(drag.moved){view.cx=drag.cx-dx/view.z;view.cy=drag.cy+dy/view.z;draw()}}});
+const up=e=>{const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(drag&&!drag.moved&&was===1&&e.type==='pointerup'){const[mx,my]=toM(e.offsetX,e.offsetY);const i=hitAt(mx,my);if(i>=0)tap(i)}if(!ptrs.size)drag=null};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault();const[mx,my]=toM(e.offsetX,e.offsetY);view.z=Math.max(0.05,Math.min(3.5,view.z*Math.exp(-e.deltaY*0.0015)));const[nx,ny]=toM(e.offsetX,e.offsetY);view.cx+=mx-nx;view.cy+=my-ny;draw()},{passive:false});
+new ResizeObserver(()=>{if(!$('play').hidden){resize()}}).observe($('cbox'));
+$('lvList').addEventListener('click',e=>{const b=e.target.closest('[data-play]');if(!b)return;if(!$('nick').value.trim()){$('nick').focus();$('nick').placeholder='Nhập tên trước đã';return}const lv=LEVELS.find(l=>l.id===b.dataset.play);if(lv)startPlay(lv)});
+$('nick').value=LS('ht_pt_nick')||'';$('nick').oninput=()=>{LSset('ht_pt_nick',$('nick').value.trim());renderList()};
+
+/* ---------- scoring ---------- */
+const TD={nm:5,eventual:60,late:60,latePos:60,fair:70,improve:0,replay:60,minRuns:5,eWin:90,eLow:80,eSec:4};
+let T={...TD,...(LS('ht_pt_thr')||{})};
+const TLBL=[['minRuns','Số ván tối thiểu để đánh giá'],['nm','Khó tốt: điểm suýt thua TB ≥'],['eventual','Khó tốt: cuối cùng thắng (có Revive) ≥ %'],['latePos','Đỉnh queue tính là "cuối level" nếu sau % tiến độ'],['late','Khó tốt: % ván có đỉnh ở cuối level ≥'],['fair','Khó tốt: % lần đầy hàng mà vẫn có món đúng đang lộ ≥'],['improve','Khó tốt: ván 2+ thắng hơn ván 1 ít nhất (điểm %)'],['replay','Khó tốt: % trả lời "muốn chơi lại" ≥'],['eWin','Dễ tốt: thắng không Revive ≥ %'],['eLow','Dễ tốt: % ván queue không quá 2/5 ≥'],['eSec','Dễ tốt: giây mỗi tap TB ≤']];
+function renderThr(){$('thr').innerHTML=TLBL.map(([k,l])=>`<label for="t_${k}">${l}</label><input id="t_${k}" type="number" step="any" value="${T[k]}">`).join('')+`<span></span><button id="tReset">Về mặc định</button>`;
+ TLBL.forEach(([k])=>$('t_'+k).onchange=()=>{T[k]=+$('t_'+k).value;LSset('ht_pt_thr',T);renderResults()});$('tReset').onclick=()=>{T={...TD};LSset('ht_pt_thr',null);renderThr();renderResults()}}
+const winLbl=w=>w>=T.eWin/100?'E':w>=.7?'M':w>=.4?'H':'VH';
+const d3Lbl=d=>d<0.4?'E':d<2?'M':'H';
+const pct=v=>v==null||isNaN(v)?'–':Math.round(v*100)+'%';
+function stats(lv,PL){const R=(PL||PLAYS).filter(p=>p.lv===lv.id&&p.res);const n=R.length;if(!n)return{n:0,lv};
+ const wins=R.filter(p=>p.res==='win'),w0=R.filter(p=>p.res==='win'&&!p.rev).length/n,ev=wins.length/n;
+ const sc=R.map(p=>p.score??score(p)),nm=sc.reduce((a,b)=>a+b,0)/n,mix=[10,7,3,2,0].map(v=>sc.filter(s=>s===v).length/n);
+ const d3=R.reduce((a,p)=>a+(p.d3||0),0)/n,tense=R.filter(p=>p.peakAll>=3),late=tense.length?tense.filter(p=>p.peakPos>=T.latePos/100).length/tense.length:null;
+ const F=R.flatMap(p=>p.full||[]),fair=F.length?F.filter(f=>f.fair).length/F.length:null;
+ const rp=R.filter(p=>p.replay!=null),replay=rp.length?rp.filter(p=>p.replay).length/rp.length:null;
+ const who=[...new Set(R.map(p=>p.who))];let a1=0,n1=0,a2=0,n2=0,rep=0;for(const w of who){const m=R.filter(p=>p.who===w).sort((a,b)=>a.att-b.att);if(m.length<2)continue;rep++;n1++;a1+=m[0].res==='win'?1:0;for(const p of m.slice(1)){n2++;a2+=p.res==='win'?1:0}}
+ const improve=rep>=2?(a2/n2-a1/n1):null;
+ const low=R.filter(p=>p.peakAll<=2).length/n,secs=R.filter(p=>p.ntap).map(p=>p.dur/1000/p.ntap),sec=secs.length?secs.reduce((a,b)=>a+b,0)/secs.length:null;
+ const mL=winLbl(w0),want=lv.label||'',enough=n>=T.minRuns;
+ const hard=want==='H'||want==='VH'||(enough&&(mL==='H'||mL==='VH')),easy=want==='E'||(enough&&mL==='E');
+ const crit=[];
+ if(hard){crit.push(['Điểm suýt thua TB',nm.toFixed(1),nm>=T.nm],['Cuối cùng thắng được (có Revive)',pct(ev),ev>=T.eventual/100],['Đỉnh queue ở cuối level',late==null?'chưa có ván căng':pct(late),late==null?null:late>=T.late/100],['Thua công bằng (vẫn có món đúng đang lộ)',fair==null?'chưa ai đầy hàng':pct(fair),fair==null?null:fair>=T.fair/100],['Chơi lại có tiến bộ',improve==null?'cần ≥2 người chơi lại':(improve>=0?'+':'')+Math.round(improve*100)+' điểm %',improve==null?null:improve*100>=T.improve],['Muốn chơi lại',pct(replay),replay==null?null:replay>=T.replay/100])}
+ if(easy&&!hard){crit.push(['Thắng không cần Revive',pct(w0),w0>=T.eWin/100],['Queue không quá 2/5',pct(low),low>=T.eLow/100],['Giây mỗi tap TB',sec==null?'–':sec.toFixed(1)+' s',sec==null?null:sec<=T.eSec])}
+ let verdict='',vc='meh';if(!enough)verdict=`Cần ≥${T.minRuns} ván`;else if(crit.length){const known=crit.filter(c=>c[2]!=null),fail=known.filter(c=>!c[2]);verdict=hard?(fail.length?'Khó chưa tốt':'Khó tốt'):(fail.length?'Dễ chưa tốt':'Dễ tốt');vc=fail.length?'bad':'good';if(!fail.length&&known.length<crit.length)verdict+=' (thiếu dữ liệu)'}else verdict='Vừa';
+ const match=!want?null:want===mL?0:LBL.indexOf(mL)-LBL.indexOf(want);
+ return{lv,n,testers:who.length,w0,ev,nm,mix,d3,late,fair,replay,improve,low,sec,mL,dL:d3Lbl(d3),want,match,hard,easy,crit,verdict,vc,R}}
+
+const BOT={};let botQ=[];
+function botFor(lv){if(BOT[lv.id])return BOT[lv.id];if(!botQ.includes(lv.id)){botQ.push(lv.id);setTimeout(botTick,50)}return null}
+function botTick(){const id=botQ.shift();if(!id)return;const lv=LEVELS.find(l=>l.id===id);if(lv&&!BOT[id]){try{const o=prep(lv);const keep=S;S=o.S;const a=runBot(o.C,300,'avg',777),k=runBot(o.C,100,'skilled',12345);S=keep;BOT[id]={avg:a.win,skD3:k.d3}}catch(e){BOT[id]={err:1}}renderResults()}if(botQ.length)setTimeout(botTick,30)}
+
+let selLv=null;
+const MIXC=['#2b8a55','#1d5d8a','#7cb8e6','#b8740a','#c9ced6'];
+const tag=l=>l?`<span class="tag ${l}">${LBLN[l]||l}</span>`:'<span class="meh">–</span>';
+function renderResults(){if($('v-ket-qua').hidden)return;const ST=LEVELS.map(l=>stats(l));const tot=PLAYS.length,ppl=new Set(PLAYS.map(p=>p.who)).size;
+ $('rSub').textContent=`${LEVELS.length} level · ${tot} ván · ${ppl} người chơi${DB?'':' · dữ liệu chỉ trong trình duyệt này'}`;
+ ST.sort((a,b)=>(b.n?1:0)-(a.n?1:0)||(b.hard-a.hard)||((b.nm||0)-(a.nm||0)));
+ $('rTable').tBodies[0].innerHTML=ST.length?ST.map(s=>{const b=botFor(s.lv);const mm=s.match==null||!s.n?'':s.match===0?' <span class="good" title="Khớp nhãn muốn">✓</span>':` <span class="bad" title="${s.match>0?'Khó hơn':'Dễ hơn'} nhãn muốn">${s.match>0?'↑':'↓'}</span>`;
+  return`<tr data-id="${esc(s.lv.id)}" class="${selLv===s.lv.id?'sel':''}"><td><b>${esc(s.lv.name)}</b></td><td>${tag(s.want)}</td><td>${s.n?tag(s.mL)+mm:'<span class="meh">–</span>'}</td><td class="n">${s.n}</td><td class="n">${s.n?pct(s.w0):'–'}</td><td class="n">${s.n?s.nm.toFixed(1):'–'}</td><td>${s.n?`<div class="mix">${s.mix.map((v,k)=>`<i style="width:${v*100}%;background:${MIXC[k]}"></i>`).join('')}</div>`:''}</td><td class="${s.vc}">${s.n?esc(s.verdict):'<span class="meh">Chưa ai chơi</span>'}</td><td class="n hide-s">${b?(b.err?'lỗi':pct(b.avg)):'…'}</td></tr>`}).join(''):'<tr><td colspan="9" class="hint">Chưa có level. Thêm ở tab Quản lý level.</td></tr>';
+ renderDetail(ST.find(s=>s.lv.id===selLv))}
+$('rTable').addEventListener('click',e=>{const r=e.target.closest('tr[data-id]');if(!r)return;selLv=r.dataset.id;renderResults()});
+function renderDetail(s,el){const d=el||$('detail');if(!s){d.innerHTML='<p class="hint">Bấm 1 level trong bảng để xem chi tiết.</p>';return}const lv=s.lv,b=BOT[lv.id];
+ if(!s.n){d.innerHTML=`<h3 style="margin-top:0">${esc(lv.name)}</h3><p class="hint">Chưa có ai chơi level này.</p>`;return}
+ const cmp=s.match==null?'Chưa đặt nhãn muốn cho level này.':s.match===0?`Đúng như muốn (${LBLN[s.want]}).`:`${s.match>0?'Khó hơn':'Dễ hơn'} mong muốn: muốn ${LBLN[s.want]}, đo được ${LBLN[s.mL]}.`;
+ const kOf=p=>p.who==='bot'?'bot:'+p.nick:p.who;const people=[...new Set(s.R.map(kOf))].map(w=>{const m=s.R.filter(p=>kOf(p)===w).sort((a,b)=>a.att-b.att);return`<tr><td>${esc(m[0].nick||'?')}</td><td>${m.slice(0,25).map(p=>p.res==='win'?(p.rev?'R'+p.rev:'✓'):p.res==='quit'?'bỏ':'✕').join(' ')}${m.length>25?` … (${m.length} ván)`:''}</td><td class="n">${(m.reduce((a,p)=>a+(p.score??score(p)),0)/m.length).toFixed(1)}</td></tr>`}).join('');
+ d.innerHTML=`<h3 style="margin-top:0">${esc(lv.name)} ${tag(s.want)} → ${tag(s.mL)}</h3><p>${esc(cmp)}${lv.intent?`<br><span class="hint">Ý đồ: ${esc(lv.intent)}</span>`:''}</p>
+ <div class="kv"><div><b>${pct(s.w0)}</b><small>thắng không Revive</small></div><div><b>${pct(s.ev)}</b><small>cuối cùng thắng</small></div><div><b>${s.d3.toFixed(2)}</b><small>lần chạm 3/5 TB (nhãn ${LBLN[s.dL]})</small></div><div><b>${s.nm.toFixed(1)}</b><small>điểm suýt thua TB / 10</small></div></div>
+ ${s.crit.length?`<h3>${s.hard?'Có phải level khó tốt?':'Có phải level dễ tốt?'} <span class="${s.vc}">${esc(s.verdict)}</span></h3><ul class="crit">${s.crit.map(c=>`<li><span class="${c[2]==null?'meh':c[2]?'good':'bad'}">${c[2]==null?'?':c[2]?'✓':'✕'}</span><span>${esc(c[0])}</span><span class="v">${esc(c[1])}</span></li>`).join('')}</ul>`:'<p class="hint">Level vừa: chỉ kiểm tra nhãn có khớp không.</p>'}
+ <h3>Cơ cấu điểm (${s.n} ván, ${s.testers} người)</h3><div class="bars">${['10đ Revive 1','7đ lên 4/5','3đ lên 3/5','2đ Revive 2','0đ'].map((l,k)=>`<div><span>${l}</span><i style="width:${Math.max(1,s.mix[k]*100)}%;background:${MIXC[k]}"></i><span class="n">${pct(s.mix[k])}</span></div>`).join('')}</div>
+ <p class="hint">So với bot: bot trung bình thắng ${b&&!b.err?pct(b.avg):'…'} (người thật không Revive ${pct(s.w0)}); bot giỏi chạm 3/5 ${b&&!b.err?b.skD3.toFixed(2):'…'} lần (người ${s.d3.toFixed(2)}).</p>
+ <h3>Từng người</h3><div class="scroll"><table><thead><tr><th>Người</th><th>Các ván (✓ thắng, R1/R2 thắng sau Revive, ✕ thua)</th><th class="n">Điểm TB</th></tr></thead><tbody>${people}</tbody></table></div>`}
+
+const CSVH=['level','nhan_muon','nguoi','van_thu','ket_qua','revive','queue_cao_nhat_truoc_revive','queue_cao_nhat','vi_tri_dinh_pct','cham_3','cham_4','tap','tap_vao_hang_cho','bam_mon_bi_che','giay','diem','muon_choi_lai','thua_cong_bang'];
+const csvq=v=>{v=v==null?'':String(v);return/[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+$('csv').onclick=()=>{const rows=PLAYS.filter(p=>p.res).map(p=>{const lv=LEVELS.find(l=>l.id===p.lv);return[lv?lv.name:p.lvName,lv?lv.label:'',p.nick,p.att,p.res,p.rev,p.peak0,p.peakAll,Math.round((p.peakPos||0)*100),p.d3,p.d4,p.ntap,p.qtaps,p.cov,Math.round((p.dur||0)/1000),p.score??score(p),p.replay==null?'':p.replay?'co':'khong',(p.full||[]).map(f=>f.fair?'co':'khong').join('/')]});
+ saveFile('playtest_ket_qua.csv','﻿'+[CSVH,...rows].map(r=>r.map(csvq).join(',')).join('\n'),'text/csv')};
+$('impBtn').onclick=()=>$('impFile').click();
+$('impFile').onchange=async()=>{let n=0;for(const f of $('impFile').files){try{const arr=JSON.parse(await f.text());for(const p of(Array.isArray(arr)?arr:[arr]))if(p&&p.id&&p.lv&&p.res){if(DB)await DB.doc('plays/'+p.id).set(p);else if(!PLAYS.find(x=>x.id===p.id))PLAYS.push(p);n++}}catch(e){}}if(!DB){LSset('ht_pt_plays',PLAYS);renderAll()}$('rSub').textContent=`Đã nhập ${n} ván.`;$('impFile').value=''};
+
+/* ---------- bot tab ---------- */
+const PERS=[['Giỏi, hay dùng booster',.945,.69,.155],['Giỏi, ít dùng booster',.946,.22,.193],['TB, hay dùng booster',.920,.715,.182],['TB, ít dùng booster',.921,.245,.160],['Yếu, hay dùng booster',.876,.781,.223],['Yếu, ít dùng booster',.884,.21,.086]],ALLACC=0.915,BASE_RES=0.48;/* bot v2 (editor v14): name, accuracy, booster rescue rate, share */
+const offOf=p=>lg(p[1])-lg(ALLACC),apsBand=a=>a<1.3?'E':a<1.75?'M':a<2.5?'H':'VH';
+function lvPos(lv){const v=+lv.lvNo;if(v>0)return v;const m=String(lv.name||'').match(/(\d+)/);return m?+m[1]:40}
+/* bot v2 in-game estimate: pass 1 no help -> nohelp win; rescue level from level position; pass 2 with boosters -> win, APS = 1/win */
+function runV2(o,N,L){const keep=S;S=o.S;const W=PERS.reduce((a,p)=>a+p[3],0);let nh=0;const g1=PERS.map((p,i)=>{const r=runBot(o.C,N,'avg',900+i,{off:offOf(p),pr:0});nh+=r.win*p[3]/W;return r});
+ const lf=Math.max(0,0.432-0.212*nh+0.0073*Math.min(L,40))/BASE_RES;let win=0,hp=0;
+ const per=PERS.map((p,i)=>{const pr=Math.min(1,p[2]*lf);const r=runBot(o.C,N,'avg',950+i,{off:offOf(p),pr});win+=r.win*p[3]/W;hp+=r.helps*p[3]/W;return{name:p[0],share:p[3]/W,nohelp:g1[i].win,win:r.win,helps:r.helps,pr}});
+ S=keep;const aps=1/Math.max(win,0.02);return{L,nohelp:nh,win,helps:hp,aps,band:apsBand(aps),per}}
+let BP=[],BV={},bSel=null,bBusy=false;
+$('bGo').onclick=()=>{if(bBusy)return;const N=Math.max(10,Math.min(2000,+$('bN').value||120));const lvs=LEVELS.filter(l=>l.on!==false);if(!lvs.length){$('bMsg').textContent='Chưa có level.';return}
+ bBusy=true;BP=[];BV={};let k=0;const r=rng((Math.random()*1e9)|0);const W=PERS.reduce((a,p)=>a+p[3],0);
+ const nextLv=()=>{if(k>=lvs.length){bBusy=false;$('bMsg').textContent=`Xong: ${lvs.length} level × ${N} ván mỗi kiểu.`;renderBot();return}const lv=lvs[k++];$('bMsg').textContent=`Đang chạy ${lv.name} (${k}/${lvs.length})…`;
+  setTimeout(()=>{try{const o=prep(lv);BV[lv.id]=runV2(o,N,lvPos(lv));for(let i=0;i<N;i++){let u=r()*W,j=0;while(j<PERS.length-1&&(u-=PERS[j][3])>0)j++;BP.push(simRun(lv,o,'avg',r,{name:PERS[j][0],off:offOf(PERS[j])}))}}catch(e){BV[lv.id]={err:e.message}}renderBot();nextLv()},20)};nextLv()};
+function renderBot(){if($('v-bot').hidden)return;const lvs=LEVELS.filter(l=>l.on!==false);
+ $('bTable').tBodies[0].innerHTML=lvs.length?lvs.map(lv=>{const b=stats(lv,BP),h=stats(lv),v=BV[lv.id];const vm=v&&!v.err&&lv.label?(v.band===lv.label?' <span class="good">✓</span>':` <span class="bad">${LBL.indexOf(v.band)>LBL.indexOf(lv.label)?'↑':'↓'}</span>`):'';
+  return`<tr data-id="${esc(lv.id)}" class="${bSel===lv.id?'sel':''}"><td><b>${esc(lv.name)}</b><br><small class="meh">vị trí ${lvPos(lv)}</small></td><td>${tag(lv.label)}</td><td>${v?(v.err?'<span class="bad">lỗi</span>':tag(v.band)+vm):'<span class="meh">–</span>'}</td><td class="n">${v&&!v.err?v.aps.toFixed(2):'–'}</td><td class="n">${v&&!v.err?pct(v.nohelp):'–'}</td><td>${h.n?tag(h.mL):'<span class="meh">chưa có</span>'}</td><td class="n">${b.n?b.nm.toFixed(1):'–'} / ${h.n?h.nm.toFixed(1):'–'}</td><td>${b.n?`<div class="mix">${b.mix.map((x,k)=>`<i style="width:${x*100}%;background:${MIXC[k]}"></i>`).join('')}</div>`:''}</td><td class="${b.vc||'meh'}">${b.n?esc(b.verdict):''}</td><td><button data-watch="${esc(lv.id)}" title="Xem bot chơi 1 ván">👁</button></td></tr>`}).join(''):'<tr><td colspan="10" class="hint">Chưa có level. Thêm ở tab Quản lý level.</td></tr>';
+ const lv=LEVELS.find(l=>l.id===bSel);if(lv){const b=stats(lv,BP),v=BV[lv.id];if(b.n){renderDetail(b,$('bDetail'));const d=$('bDetail');d.querySelector('h3').insertAdjacentHTML('beforeend',' <span class="meh">(bot, luật playtest)</span>');
+  if(v&&!v.err)d.insertAdjacentHTML('afterbegin',`<h3 style="margin-top:0">Như ngoài game (có booster)</h3><div class="kv"><div><b>${v.aps.toFixed(2)}</b><small>APS ước tính · ${LBLN[v.band]}</small></div><div><b>${pct(v.win)}</b><small>thắng có booster</small></div><div><b>${pct(v.nohelp)}</b><small>thắng không trợ giúp</small></div><div><b>${v.helps.toFixed(2)}</b><small>trợ giúp / ván</small></div></div><div class="scroll"><table><thead><tr><th>Nhóm</th><th class="n">Tỉ trọng</th><th class="n">Không trợ giúp</th><th class="n">Có booster</th></tr></thead><tbody>${v.per.map(p=>`<tr><td>${esc(p.name)}</td><td class="n">${pct(p.share)}</td><td class="n">${pct(p.nohelp)}</td><td class="n">${pct(p.win)}</td></tr>`).join('')}</tbody></table></div><hr style="border:0;border-top:1px solid var(--line);margin:14px 0">`)}}}
+$('bTable').addEventListener('click',e=>{const w=e.target.closest('[data-watch]');if(w){const lv=LEVELS.find(l=>l.id===w.dataset.watch);if(lv)startPlay(lv,{bot:'avg'});return}const r=e.target.closest('tr[data-id]');if(!r)return;bSel=r.dataset.id;renderBot()});
+
+/* ---------- level admin ---------- */
+function renderAdmin(){if($('v-level').hidden)return;$('lvAdmin').innerHTML=LEVELS.length?LEVELS.map(l=>`<div class="lrow" data-id="${esc(l.id)}"><input type="text" data-k="name" value="${esc(l.name)}" aria-label="Tên level"><select data-k="label" aria-label="Nhãn muốn"><option value="">Nhãn muốn?</option>${LBL.map(k=>`<option value="${k}"${l.label===k?' selected':''}>${LBLN[k]}</option>`).join('')}</select><input type="number" data-k="lvNo" min="1" max="999" value="${l.lvNo||''}" placeholder="vị trí" title="Vị trí level trong game (cho bot v2)" style="width:80px"><label class="row"><input type="checkbox" data-k="on"${l.on!==false?' checked':''}> cho chơi</label><button class="danger" data-k="del">Xoá</button><input type="text" data-k="intent" value="${esc(l.intent||'')}" placeholder="Ý đồ thiết kế (không bắt buộc)" style="grid-column:1/-1" aria-label="Ý đồ"></div>`).join(''):'<p class="hint">Chưa có level.</p>'}
+$('lvAdmin').addEventListener('change',async e=>{const r=e.target.closest('[data-id]');if(!r)return;const l=LEVELS.find(x=>x.id===r.dataset.id);const k=e.target.dataset.k;if(!l||!k||k==='del')return;const rec={...l,[k]:k==='on'?e.target.checked:k==='lvNo'?(+e.target.value||0):e.target.value};try{await saveLevel(rec);$('lvMsg').textContent='Đã lưu.'}catch(err){$('lvMsg').textContent='Không lưu được: '+(err.code||err.message)}});
+let delArm=null;$('lvAdmin').addEventListener('click',async e=>{if(e.target.dataset.k!=='del')return;const id=e.target.closest('[data-id]').dataset.id;if(delArm!==id){delArm=id;e.target.textContent='Bấm lần nữa để xoá';return}delArm=null;try{await delLevel(id)}catch(err){$('lvMsg').textContent='Không xoá được: '+(err.code||err.message)}});
+function guessLabel(o){const d=o.editorMeta&&o.editorMeta.designerLabel;const m={Easy:'E',Medium:'M',Normal:'M',Hard:'H','Super Hard':'VH','Super hard':'VH'};return m[d]||''}
+async function addLevel(o,name){parseLevel(o);const rec={id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:name||o.levelName||'Level',json:JSON.stringify(o),label:guessLabel(o),intent:(o.editorMeta&&o.editorMeta.intent)||'',on:true,t:Date.now()};await saveLevel(rec);return rec}
+$('pubBtn').onclick=()=>saveFile('playtest-levels.json',JSON.stringify(LEVELS.map(({id,name,json,label,intent,on,t,lvNo})=>({id,name,json,label,intent,on,t,lvNo})),null,1));
+$('addFile').onclick=()=>$('addFileIn').click();
+$('addFileIn').onchange=async()=>{const out=[];for(const f of $('addFileIn').files){try{const o=JSON.parse(await f.text());await addLevel(o,o.levelName||f.name.replace(/\.json$/i,''));out.push(f.name)}catch(e){out.push(f.name+' (lỗi: '+e.message+')')}}$('lvMsg').textContent='Đã thêm: '+out.join(', ');$('addFileIn').value=''};
+$('addReal').onclick=async()=>{const f=$('realSel').value;try{const o=await(await fetch('levels/'+f+'.json')).json();const n=f.replace('level_','Level ');const info=DATA.levels.find(x=>x.level===parseInt(f.slice(6),10));const rec=await addLevel(o,n);if(info&&!rec.label){}$('lvMsg').textContent='Đã thêm '+n+'. Nhớ chọn nhãn muốn.'}catch(e){$('lvMsg').textContent='Không thêm được: '+(e.code||e.message)}};
+
+/* ---------- views ---------- */
+function route(){let v=location.hash.slice(1);if(!['choi','ket-qua','bot','level'].includes(v))v='choi';if(v==='level'&&!ADMIN)v='choi';['choi','ket-qua','bot','level'].forEach(k=>$('v-'+k).hidden=k!==v);document.querySelectorAll('#tabs a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));renderAll()}
+addEventListener('hashchange',route);
+
+(async()=>{try{DATA=await(await fetch('data/catalog.json')).json()}catch(e){$('lvList').innerHTML='<p class="bad">Không tải được dữ liệu sprite: '+esc(e.message)+'</p>';return}
+ DATA.sprites.forEach(s=>SP[s.id]=s);for(let k=1;k<=60;k++){const L=SP['Long_sleeve_shirt_'+k],Sh=SP['Short_sleeve_shirt_'+k];if(L&&!SP['Long_sleeved_Shirt_'+k])SP['Long_sleeved_Shirt_'+k]=L;if(Sh){if(!SP['Short_sleevedShirt_'+k])SP['Short_sleevedShirt_'+k]=Sh;if(!SP['Short_sleevShirt_'+k])SP['Short_sleevShirt_'+k]=Sh}}
+ DATA.cats.forEach(c=>CAT[c.cat]=c);
+ $('realSel').innerHTML=DATA.levelFiles.map(f=>{const n=parseInt(f.slice(6),10);const l=DATA.levels.find(x=>x.level===n);return`<option value="${f}">${f.replace('level_','Level ')}${l?' · '+esc(l.room)+' · '+esc(l.label):''}</option>`}).join('');
+ renderThr();route();dataInit()})();
+window.__pt={get BV(){return BV},get BP(){return BP},simRun,get LEVELS(){return LEVELS},get PLAYS(){return PLAYS},stats,score,startPlay,tap,get G(){return G},get P(){return P}};
+}
+</script>
+
+
+</body></html>

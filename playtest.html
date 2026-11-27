@@ -44,6 +44,35 @@ input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:va
 .lvl button b{font-size:16px}
 .lvl small{color:var(--mute);font-weight:600}
 .done{color:var(--ok)!important}
+.lvl.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(min-width:640px){.lvl.cards{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}}
+.lvl.cards button.lc{padding:0;min-height:0;border-radius:16px;overflow:hidden;gap:0;align-items:stretch;background:var(--panel);border:1px solid var(--line);transition:transform .12s,border-color .12s}
+.lvl.cards button.lc:hover{border-color:var(--acc);transform:translateY(-2px)}
+.lvl.cards button.lc.full{border-color:var(--ok)}
+.lc .th{aspect-ratio:4/3;width:100%;object-fit:cover;display:block;background:var(--stage)}
+.lc .tx{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px}
+.lc .tx b{font-size:16px;font-weight:800}
+.dots{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--line);display:block}
+.dots i.f{background:var(--acc)}
+.lc.full .dots i.f{background:var(--ok)}
+.lc .st{font-size:12.5px;font-weight:700;color:var(--mute)}
+.lc.full .st{color:var(--ok)}
+.welcome{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin:4px 0 16px}
+.welcome h2{margin:0 0 10px;font-size:22px}
+.welcome .row{flex-wrap:nowrap}
+.welcome input{flex:1 1 auto;min-width:0;padding:10px 12px;border-radius:12px;font-size:16px}
+.welcome button{min-height:44px;border-radius:12px;padding:6px 18px}
+.welcome a{color:var(--acc);font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:underline;margin-left:8px}
+details.how{margin:0 0 12px}
+details.how summary{cursor:pointer;color:var(--mute);font-weight:700;font-size:13.5px}
+#sendBar{position:sticky;bottom:0;z-index:4;background:var(--bg);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+#sendBar .in{max-width:1300px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#sendBar .tx{flex:1 1 160px;font-weight:800}
+#sendBar .tx small{display:block;color:var(--mute);font-weight:600;font-size:12.5px}
+#sendBar button{min-height:46px;border-radius:14px;padding:6px 20px;font-size:15px;flex:1 1 220px}
+@media(min-width:640px){#sendBar button{flex:0 0 auto}}
+.tester h1{font-size:20px}
 /* play */
 #play{position:fixed;inset:0;background:var(--stage);display:flex;flex-direction:column;z-index:5}
 #play[hidden]{display:none}
@@ -112,13 +141,20 @@ tbody tr{cursor:pointer}
 
 <main>
  <section class="wrap" id="v-choi">
-  <div class="row" style="justify-content:space-between">
-   <div><h2>Chơi thử level</h2><p class="hint" id="howto">Chơi mỗi level 5 lần. Không có booster. Khi hàng chờ đầy, bạn được Revive tối đa 2 lần. Sau mỗi ván trả lời 1 câu.</p></div>
-   <label class="row">Tên của bạn <input id="nick" type="text" maxlength="30" placeholder="vd: Lan" style="width:150px"></label>
+  <div class="welcome" id="welcome" hidden>
+   <h2 id="wHi">Chào cậu 👋 Cậu tên gì?</h2>
+   <div class="row" id="wRow"><span id="nickSlot" style="display:contents"></span><button class="pri" id="wGo">Bắt đầu</button></div>
+   <div id="wBack" hidden><a id="wChange">đổi tên</a></div>
   </div>
+  <div class="row" id="adminHead" style="justify-content:space-between">
+   <div><h2 id="chTitle">Chơi thử level</h2><p class="hint" id="howto">Chơi mỗi level 5 lần. Không có booster. Khi hàng chờ đầy, bạn được Revive tối đa 2 lần. Sau mỗi ván trả lời 1 câu.</p></div>
+   <label class="row" id="nickLbl">Tên của bạn <input id="nick" type="text" maxlength="30" placeholder="vd: Lan" style="width:150px"></label>
+  </div>
+  <details class="how" id="how" hidden><summary>Cách chơi</summary><p class="hint">Chơi mỗi level 5 lần. Không có booster. Khi hàng chờ đầy, cậu được Revive tối đa 2 lần. Sau mỗi ván trả lời 1 câu.</p></details>
   <div class="lvl" id="lvList"></div>
   <p class="hint" id="pend"></p>
  </section>
+ <div id="sendBar" hidden><div class="in"><div class="tx"><span id="sbTxt"></span><small id="sbHelp"></small></div><button class="pri" id="sbBtn">Gửi kết quả cho designer</button></div></div>
 
  <section class="wrap" id="v-ket-qua" hidden>
   <div class="row" style="justify-content:space-between;align-items:flex-end">
@@ -287,9 +323,30 @@ async function savePlay(p){if(DB){try{await DB.doc('plays/'+p.id).set(p);return 
 
 function renderAll(){renderList();renderAdmin();renderResults();renderBot()}
 function myKey(){return ME||('local:'+($('nick').value.trim()||'?'))}
-function renderList(){const act=LEVELS.filter(l=>l.on!==false);const mk=myKey();
- $('lvList').innerHTML=act.length?act.map(l=>{const n=PLAYS.filter(p=>p.lv===l.id&&p.who===mk).length;return`<button data-play="${esc(l.id)}"><b>${esc(l.name)}</b><small class="${n>=5?'done':''}">${n>=5?'✓ Đã chơi đủ ':'Đã chơi '}${n}/5 ván</small></button>`}).join(''):`<p class="hint">Chưa có level nào để chơi thử.${ADMIN?' Thêm level ở tab Quản lý level.':''}</p>`;renderPend()}
-function renderPend(){const p=LS('ht_pt_pending')||[];$('pend').innerHTML=p.length?`${p.length} ván chưa gửi lên tool (lưu trong trình duyệt này). <button id="dlPend">Tải file kết quả</button> rồi gửi cho designer.`:'';const b=$('dlPend');if(b)b.onclick=()=>saveFile('ketqua_playtest_'+($('nick').value.trim()||'nguoitest')+'.json',JSON.stringify(p))}
+const NEED=5;
+const bgThumb=l=>{let b='HT_BG_1';try{b='HT_BG_'+parseInt(String(JSON.parse(l.json).bg||'1').replace(/\D/g,''),10)}catch(e){}return'bgthumb/'+b+'.webp'};
+function lvNum(l){const m=String(l.name||'').match(/\d+/);return m?m[0]:''}
+function myDone(act){const mk=myKey();let x=0;for(const l of act)x+=Math.min(NEED,PLAYS.filter(p=>p.lv===l.id&&p.who===mk).length);return x}
+function renderWho(){const t=!ADMIN,nm=($('nick').value||'').trim(),known=!!LS('ht_pt_nick_ok')&&!!nm&&!window.__editName;
+ document.body.classList.toggle('tester',t);$('welcome').hidden=!t;$('adminHead').hidden=t;$('how').hidden=!t;
+ if(!t){$('nickLbl').appendChild($('nick'));$('nick').hidden=false;return}
+ const slot=$('nickSlot');if($('nick').parentNode!==slot)slot.appendChild($('nick'));
+ $('nick').style.width='';$('nick').hidden=known;$('wGo').hidden=known;$('wBack').hidden=!known;
+ $('wHi').textContent=known?'Chào '+nm+' 👋':'Chào cậu 👋 Cậu tên gì?'}
+function renderList(){const act=LEVELS.filter(l=>l.on!==false);const mk=myKey();renderWho();
+ if(ADMIN){$('lvList').className='lvl';
+  $('lvList').innerHTML=act.length?act.map(l=>{const n=PLAYS.filter(p=>p.lv===l.id&&p.who===mk).length;return`<button data-play="${esc(l.id)}"><b>${esc(l.name)}</b><small class="${n>=5?'done':''}">${n>=5?'✓ Đã chơi đủ ':'Đã chơi '}${n}/5 ván</small></button>`}).join(''):`<p class="hint">Chưa có level nào để chơi thử. Thêm level ở tab Quản lý level.</p>`;renderPend();return}
+ $('lvList').className='lvl cards';
+ $('lvList').innerHTML=act.length?act.map(l=>{const n=PLAYS.filter(p=>p.lv===l.id&&p.who===mk).length,full=n>=NEED;
+  return`<button class="lc${full?' full':''}" data-play="${esc(l.id)}"><img class="th" src="${bgThumb(l)}" alt="" loading="lazy"><span class="tx"><b>${esc(l.name)}</b><span class="dots" aria-label="${Math.min(n,NEED)}/${NEED}">${Array.from({length:NEED},(_,i)=>`<i class="${i<n?'f':''}"></i>`).join('')}</span><span class="st">${full?'✓ Xong':n+'/'+NEED+' ván'}</span></span></button>`}).join(''):'<p class="hint">Chưa có level nào để chơi thử.</p>';renderPend()}
+function renderPend(){const p=LS('ht_pt_pending')||[];
+ const dl=()=>saveFile('ketqua_playtest_'+($('nick').value.trim()||'nguoitest')+'.json',JSON.stringify(LS('ht_pt_pending')||[]));
+ if(ADMIN){$('sendBar').hidden=true;$('pend').innerHTML=p.length?`${p.length} ván chưa gửi lên tool (lưu trong trình duyệt này). <button id="dlPend">Tải file kết quả</button> rồi gửi cho designer.`:'';const b=$('dlPend');if(b)b.onclick=dl;return}
+ $('pend').innerHTML='';const act=LEVELS.filter(l=>l.on!==false),tot=act.length*NEED,done=myDone(act);
+ $('sendBar').hidden=!$('v-ket-qua').hidden||!$('v-bot').hidden||!(act.length);
+ $('sbTxt').textContent='Đã chơi '+done+'/'+tot+' ván';const btn=$('sbBtn');
+ if(DB&&!p.length){btn.textContent='Đã lưu tự động ✓';btn.disabled=true;$('sbHelp').textContent=''}
+ else{btn.disabled=!p.length;btn.textContent='Gửi kết quả cho designer';$('sbHelp').textContent=DB?'Một số ván chưa lưu được, tải file rồi gửi cho designer.':'Tải 1 file rồi gửi qua Slack hoặc email.';btn.onclick=dl}}
 async function saveFile(fn,text,type){let dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch(e){}
  if(dl){try{await dl.save({filename:fn,data:text});return}catch(e){return}}
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'application/json'}));a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
@@ -365,7 +422,11 @@ cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{e.preventDefault();const[mx,my]=toM(e.offsetX,e.offsetY);view.z=Math.max(0.05,Math.min(3.5,view.z*Math.exp(-e.deltaY*0.0015)));const[nx,ny]=toM(e.offsetX,e.offsetY);view.cx+=mx-nx;view.cy+=my-ny;draw()},{passive:false});
 new ResizeObserver(()=>{if(!$('play').hidden){resize()}}).observe($('cbox'));
 $('lvList').addEventListener('click',e=>{const b=e.target.closest('[data-play]');if(!b)return;if(!$('nick').value.trim()){$('nick').focus();$('nick').placeholder='Nhập tên trước đã';return}const lv=LEVELS.find(l=>l.id===b.dataset.play);if(lv)startPlay(lv)});
-$('nick').value=LS('ht_pt_nick')||'';$('nick').oninput=()=>{LSset('ht_pt_nick',$('nick').value.trim());renderList()};
+$('nick').value=LS('ht_pt_nick')||'';if($('nick').value)LSset('ht_pt_nick_ok',1);$('nick').oninput=()=>{LSset('ht_pt_nick',$('nick').value.trim());renderList()};
+const startName=()=>{const v=$('nick').value.trim();if(!v){$('nick').focus();return}LSset('ht_pt_nick',v);LSset('ht_pt_nick_ok',1);window.__editName=false;renderList()};
+$('wGo').onclick=startName;$('nick').addEventListener('keydown',e=>{if(e.key==='Enter'&&!ADMIN)startName()});
+$('wChange').onclick=()=>{window.__editName=true;renderList();$('nick').focus();$('nick').select()};
+
 
 /* ---------- scoring ---------- */
 const TD={nm:5,eventual:60,late:60,latePos:60,fair:70,improve:0,replay:60,minRuns:5,eWin:90,eLow:80,eSec:4};

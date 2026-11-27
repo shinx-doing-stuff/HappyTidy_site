@@ -43,7 +43,7 @@ p{margin:6px 0}
 .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px}
 .card{border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;background:var(--bg)}
 .shot{aspect-ratio:16/9;background:var(--panel);border-bottom:1px solid var(--line);overflow:hidden}
-.shot img{width:100%;height:100%;object-fit:cover;object-position:top left;display:block}
+.shot img{width:100%;height:auto;display:block}
 .shot.pt{display:grid;place-items:center;padding:18px}
 .cb{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
 .cb ul{margin:4px 0 10px;padding-left:20px}
@@ -66,7 +66,7 @@ p{margin:6px 0}
 .steps{margin:6px 0;padding-left:22px}
 .steps li{margin:6px 0}
 .fig{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
-.fig img{display:block;width:100%}
+.fig img{display:block;width:100%;height:auto}
 .note{font-size:14px;color:var(--mute)}
 .scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:15px}
@@ -83,7 +83,7 @@ footer{border-top:1px solid var(--line);color:var(--mute);font-size:14px}
   <div class="top">
    <div>
     <h1>Happy Tidy level tools</h1>
-    <p class="lead">Hai tool cho level designer: tạo level với đồ thật trên map thật, rồi đo độ khó bằng bot học từ log người chơi và bằng người chơi thử.</p>
+    <p class="lead">Tạo level, chỉnh tay, đo độ khó bằng bot, rồi cho người chơi thử. Mọi thứ trong 2 tool.</p>
    </div>
    <div class="go">
     <a class="btn pri" href="editor.html">Mở tool tạo level</a>
@@ -94,25 +94,24 @@ footer{border-top:1px solid var(--line);color:var(--mute);font-size:14px}
 
   <div class="route" aria-label="Quy trình làm một level">
    <ol class="stops">
-    <li class="stop"><div class="dot">1</div><div><b>Dựng khung</b><small>Chọn map, tô vùng cấm, thêm box theo category</small><span class="tool">Tạo level</span></div></li>
-    <li class="stop"><div class="dot">2</div><div><b>Tự xếp</b><small>Đặt mức từng box và APS mục tiêu, tool tự dời đồ</small><span class="tool">Tạo level</span></div></li>
-    <li class="stop"><div class="dot">3</div><div><b>Xếp chuỗi</b><small>Ghép nhiều level, xem đường APS cả đoạn</small><span class="tool">Tạo level</span></div></li>
-    <li class="stop t2"><div class="dot">4</div><div><b>Người chơi thử</b><small>Mỗi người 5 ván, chấm điểm suýt thua</small><span class="tool">Test độ khó</span></div></li>
-    <li class="stop"><div class="dot">5</div><div><b>Xuất Unity</b><small>Tải file JSON đúng định dạng game</small><span class="tool">Tạo level</span></div></li>
+    <li class="stop"><div class="dot">1</div><div><b>Bắt đầu</b><small>Tạo level mới theo 4 câu hỏi, hoặc mở level có sẵn</small><span class="tool">Tạo level</span></div></li>
+    <li class="stop"><div class="dot">2</div><div><b>Sửa tay</b><small>Kéo, xoay, khoá món; Tự xếp lo phần còn lại</small><span class="tool">Tạo level</span></div></li>
+    <li class="stop"><div class="dot">3</div><div><b>Đo độ khó</b><small>Bot v2 ước tính APS, xem nhịp cả chuỗi level</small><span class="tool">Tạo level</span></div></li>
+    <li class="stop t2"><div class="dot">4</div><div><b>Người chơi thử</b><small>Mỗi người chơi, gửi file kết quả cho designer</small><span class="tool">Test độ khó</span></div></li>
+    <li class="stop"><div class="dot">5</div><div><b>Gửi dev</b><small>Tải file JSON đúng định dạng game</small><span class="tool">Tạo level</span></div></li>
    </ol>
   </div>
 
   <div class="cards">
    <article class="card">
-    <div class="shot"><img src="editor.webp" alt="Tool tạo level: map phòng bếp đầy đồ, bên phải là bảng độ khó với APS ước tính 1,70"></div>
+    <div class="shot"><img src="img/editor.jpg" alt="Tool tạo level: map phòng bếp đầy đồ, 5 bước bên trái, thanh độ khó ở trên"></div>
     <div class="cb">
      <h3>Tool tạo level</h3>
-     <p>Editor dùng sprite và nền thật của game, tính che phủ theo hình từng món.</p>
+     <p>Gen level theo độ khó muốn, rồi chỉnh tay cho vừa ý.</p>
      <ul>
-      <li>Thêm nhiều box một lần, đồ tự chia đều; khoá món muốn giữ chỗ</li>
-      <li>Tự xếp: bot giỏi chấm từng box, bot v2 giữ APS cả level trong khoảng chọn</li>
-      <li>4 mẫu bố cục: rải đều, chồng cao, gom cụm, dồn giữa</li>
-      <li>Phòng test bot cho nhiều level, chuỗi level với đường APS, xuất CSV / JSON</li>
+      <li>Trả lời 4 câu hỏi, bấm Gen level</li>
+      <li>Kéo món trên map; món đã chỉnh tự khoá 🔒</li>
+      <li>Phòng đo: bot v2 đo nhiều level và cả chuỗi</li>
      </ul>
      <a class="btn pri" href="editor.html">Mở tool tạo level</a>
     </div>
@@ -129,10 +128,9 @@ footer{border-top:1px solid var(--line);color:var(--mute);font-size:14px}
      <h3>Tool test độ khó</h3>
      <p>Người test chơi level ngay trên trình duyệt, không cần cài game.</p>
      <ul>
-      <li>Chơi thử: không booster, được Revive 2 lần, mỗi level 5 ván</li>
-      <li>Điểm suýt thua và đánh giá “khó tốt / dễ tốt” cho từng level</li>
-      <li>Bot v2 chơi cùng luật để so với người</li>
-      <li>Designer quản lý danh sách level, tải kết quả CSV</li>
+      <li>Nhập tên 1 lần, bấm thẻ level, chơi</li>
+      <li>Bấm Gửi kết quả cho designer</li>
+      <li>Designer nhập file để xem kết quả</li>
      </ul>
      <a class="btn" href="playtest.html">Mở tool test độ khó</a>
     </div>
@@ -168,22 +166,20 @@ footer{border-top:1px solid var(--line);color:var(--mute);font-size:14px}
 <section class="band">
  <div class="in grid2">
   <div>
-   <h2>Làm một level mới <a href="guide.html" style="font-size:16px;font-weight:800">Xem hướng dẫn chi tiết →</a></h2>
+   <h2>Làm một level mới <a href="guide.html" style="font-size:16px;font-weight:800">Xem hướng dẫn →</a></h2>
    <ol class="steps">
-    <li><b>Thiết lập:</b> chọn map, khung màn hình, tô vùng cấm nơi không được đặt đồ.</li>
-    <li><b>Đồ &amp; sprite:</b> chọn category, số box và tổng số món, bấm Thêm các box.</li>
-    <li><b>Độ khó:</b> kéo cột tím đặt mức từng box, chọn APS mục tiêu và mẫu bố cục, bấm Tự xếp.</li>
-    <li>Xem APS ước tính, chỗ bot hay thua và bản đồ kẹt; khoá món ưng ý rồi xếp lại nếu cần.</li>
-    <li><b>Lưu:</b> lưu vào thư viện chung, hoặc tải JSON để đưa vào Unity.</li>
+    <li>Mở tool, chọn <b>Tạo level mới</b> hoặc <b>Mở level có sẵn</b>.</li>
+    <li>Trả lời 4 câu hỏi, bấm <b>✨ Gen level</b>.</li>
+    <li>Chỉnh tay trên map nếu cần, rồi <b>Tự xếp lại</b>.</li>
+    <li>Đo trong <b>Phòng đo</b>, rồi lưu và tải JSON.</li>
    </ol>
   </div>
   <div>
    <h2>Cho người chơi thử</h2>
    <ol class="steps">
-    <li>Trong tool test độ khó, tab Quản lý level: thêm file JSON vừa tải, đặt nhãn muốn.</li>
-    <li>Gửi link cho người test; họ nhập tên và chơi mỗi level 5 ván.</li>
-    <li>Tab Kết quả: so nhãn đo với nhãn muốn, xem điểm suýt thua và đánh giá.</li>
-    <li>Tab Bot chơi: so người với bot v2 cùng luật.</li>
+    <li>Designer thêm level trong <code>playtest.html?admin=1</code>.</li>
+    <li>Gửi link cho người test, họ chơi rồi gửi file kết quả.</li>
+    <li>Designer nhập file, xem kết quả từng level.</li>
    </ol>
    <p class="note">Ảnh nền map L41–60 sẽ được thêm sau, hiện các map này hiển thị nền xám.</p>
   </div>
